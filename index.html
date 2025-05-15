@@ -139,7 +139,11 @@
         }
 
         #alertContainer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
             z-index: 1100;
+            max-width: 400px;
         }
 
         .alert {
@@ -175,6 +179,13 @@
             .card {
                 margin-bottom: 15px;
             }
+            
+            #alertContainer {
+                max-width: 90%;
+                left: 5%;
+                right: 5%;
+                top: 10px;
+            }
         }
     </style>
 </head>
@@ -188,7 +199,7 @@
     </div>
 
     <!-- Alert Container -->
-    <div id="alertContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 1100;"></div>
+    <div id="alertContainer"></div>
 
     <div class="app-container animate__animated animate__fadeIn">
         <!-- Header -->
@@ -313,6 +324,12 @@
                                 </thead>
                                 <tbody id="pengembalianBody">
                                     <!-- Data akan diisi oleh JavaScript -->
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">
+                                            <i class="fas fa-book-open fa-2x mb-3 text-muted"></i>
+                                            <p>Memuat data peminjaman...</p>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -365,6 +382,12 @@
                                 </thead>
                                 <tbody id="riwayatBody">
                                     <!-- Data akan diisi oleh JavaScript -->
+                                    <tr>
+                                        <td colspan="10" class="text-center py-4">
+                                            <i class="fas fa-book-open fa-2x mb-3 text-muted"></i>
+                                            <p>Memuat data riwayat...</p>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -469,8 +492,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // ====================== SUPABASE INITIALIZATION ======================
-        const SUPABASE_URL = 'https://xqnlchcbxekwulncjvfy.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxbmxjaGNieGVrd3VsbmNqdmZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNzcxNzksImV4cCI6MjA2Mjg1MzE3OX0.j8nyrPIp64bJL_WziUE8ceSvwrSU0C8VHTd4-qGl8D4';
+        const SUPABASE_URL = 'https://your-supabase-url.supabase.co';
+        const SUPABASE_KEY = 'your-supabase-key';
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // ====================== GLOBAL CONSTANTS ======================
@@ -484,8 +507,6 @@
         let reportChart = null;
         
         // Initialize Bootstrap components
-        const toastEl = document.getElementById('liveToast');
-        const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
         const pengembalianModal = new bootstrap.Modal(document.getElementById('pengembalianModal'));
         const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
 
@@ -498,7 +519,6 @@
                 document.getElementById('modalTanggalKembali').value = today;
                 document.getElementById('filterDari').value = getFirstDayOfMonth();
                 document.getElementById('filterSampai').value = today;
-                document.getElementById('reportDate').value = getCurrentWeek();
                 
                 // Event listeners for due date calculation
                 document.getElementById('lamaPinjam').addEventListener('change', hitungJatuhTempo);
@@ -510,8 +530,7 @@
                 // Load initial data
                 await Promise.all([
                     loadPeminjaman(),
-                    loadRiwayat(),
-                    generateReport()
+                    loadRiwayat()
                 ]);
                 
                 // Show welcome message
@@ -529,11 +548,8 @@
 
             // Return functions
             document.getElementById('searchPeminjaman').addEventListener('input', debounce(searchPeminjaman, 300));
-            document.getElementById('btnPrintInvoice').addEventListener('click', printInvoice);
-            document.getElementById('btnCloseInvoice').addEventListener('click', closeInvoice);
             document.getElementById('modalTanggalKembali').addEventListener('change', previewDenda);
             document.getElementById('btnProsesPengembalian').addEventListener('click', prosesPengembalian);
-            document.getElementById('btnRefreshPengembalian').addEventListener('click', () => loadPeminjaman());
             document.getElementById('btnConfirmPayment').addEventListener('click', confirmPayment);
 
             // History functions
@@ -541,14 +557,6 @@
             document.getElementById('btnFilter').addEventListener('click', () => loadRiwayat());
             document.getElementById('btnPrev').addEventListener('click', prevPage);
             document.getElementById('btnNext').addEventListener('click', nextPage);
-            document.getElementById('btnExportRiwayat').addEventListener('click', exportRiwayat);
-            document.getElementById('btnRefreshRiwayat').addEventListener('click', () => loadRiwayat());
-
-            // Report functions
-            document.getElementById('reportType').addEventListener('change', updateReportControls);
-            document.getElementById('btnGenerateReport').addEventListener('click', generateReport);
-            document.getElementById('btnExportReport').addEventListener('click', exportReport);
-            document.getElementById('btnRefreshLaporan').addEventListener('click', refreshLaporan);
         }
 
         function hitungJatuhTempo() {
@@ -611,7 +619,7 @@
                 showAlert('success', 'Peminjaman berhasil disimpan!');
                 
                 // Navigate to returns tab and refresh data
-                document.getElementById('pengembalian-tab').click();
+                document.querySelector('a[href="#pengembalian-tab"]').click();
                 await loadPeminjaman();
             } catch (error) {
                 console.error("Error saving peminjaman:", error);
@@ -654,6 +662,7 @@
                 let query = supabase
                     .from('peminjaman')
                     .select('*', { count: 'exact' })
+                    .not('tanggal_kembali', 'is', null)
                     .gte('tanggal_pinjam', dari)
                     .lte('tanggal_pinjam', sampai + 'T23:59:59')
                     .order('tanggal_pinjam', { ascending: false });
@@ -795,6 +804,128 @@
             });
         }
 
+        function openPengembalianModal(peminjamanId) {
+            const peminjaman = peminjamanList.find(p => p.id === peminjamanId);
+            if (!peminjaman) return;
+
+            currentInvoice = peminjamanId;
+            
+            document.getElementById('modalNamaPeminjam').value = peminjaman.nama;
+            document.getElementById('modalJudulBuku').value = peminjaman.judul_buku;
+            document.getElementById('modalKodeBuku').value = peminjaman.kode_buku;
+            document.getElementById('modalTanggalPinjam').value = formatDate(peminjaman.tanggal_pinjam);
+            document.getElementById('modalJatuhTempo').value = formatDate(peminjaman.tanggal_tempo);
+            
+            // Set today as default return date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('modalTanggalKembali').value = today;
+            
+            // Calculate and show fine preview
+            previewDenda();
+            
+            pengembalianModal.show();
+        }
+
+        function previewDenda() {
+            const peminjaman = peminjamanList.find(p => p.id === currentInvoice);
+            if (!peminjaman) return;
+
+            const returnDate = document.getElementById('modalTanggalKembali').value;
+            if (!returnDate) return;
+
+            const tglTempo = new Date(peminjaman.tanggal_tempo);
+            const tglKembali = new Date(returnDate);
+            
+            // Calculate days late
+            const diffTime = tglKembali - tglTempo;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const hariTelat = diffDays > 0 ? diffDays : 0;
+            
+            // Calculate fine
+            const denda = hariTelat * DENDA_PER_HARI;
+            
+            document.getElementById('modalHariTelat').value = hariTelat > 0 ? `${hariTelat} hari` : 'Tidak terlambat';
+            document.getElementById('modalDenda').value = formatCurrency(denda);
+        }
+
+        async function prosesPengembalian() {
+            const returnDate = document.getElementById('modalTanggalKembali').value;
+            if (!returnDate) {
+                showAlert('error', 'Harap pilih tanggal pengembalian!');
+                return;
+            }
+
+            showLoading('Memproses pengembalian...');
+            
+            try {
+                const peminjaman = peminjamanList.find(p => p.id === currentInvoice);
+                if (!peminjaman) throw new Error('Data peminjaman tidak ditemukan');
+
+                const tglTempo = new Date(peminjaman.tanggal_tempo);
+                const tglKembali = new Date(returnDate);
+                
+                // Calculate days late
+                const diffTime = tglKembali - tglTempo;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const hariTelat = diffDays > 0 ? diffDays : 0;
+                
+                // Calculate fine
+                const denda = hariTelat * DENDA_PER_HARI;
+                const status = denda > 0 ? 'Dikembalikan (Belum Lunas)' : 'Dikembalikan';
+
+                const { data, error } = await supabase
+                    .from('peminjaman')
+                    .update({
+                        tanggal_kembali: returnDate,
+                        hari_telat: hariTelat,
+                        denda: denda,
+                        status: status
+                    })
+                    .eq('id', currentInvoice)
+                    .select();
+
+                if (error) throw error;
+
+                hideLoading();
+                pengembalianModal.hide();
+                showAlert('success', 'Pengembalian buku berhasil diproses!');
+                
+                // Refresh data
+                await Promise.all([loadPeminjaman(), loadRiwayat()]);
+            } catch (error) {
+                console.error("Error processing return:", error);
+                hideLoading();
+                showAlert('error', 'Gagal memproses pengembalian: ' + error.message);
+            }
+        }
+
+        async function confirmPayment() {
+            showLoading('Memproses konfirmasi pembayaran...');
+            
+            try {
+                const { data, error } = await supabase
+                    .from('peminjaman')
+                    .update({
+                        status: 'Lunas'
+                    })
+                    .eq('id', currentInvoice)
+                    .select();
+
+                if (error) throw error;
+
+                hideLoading();
+                confirmModal.hide();
+                showAlert('success', 'Pembayaran denda berhasil dikonfirmasi!');
+                
+                // Refresh data
+                await loadRiwayat();
+            } catch (error) {
+                console.error("Error confirming payment:", error);
+                hideLoading();
+                showAlert('error', 'Gagal mengkonfirmasi pembayaran: ' + error.message);
+            }
+        }
+
         // ====================== UTILITY FUNCTIONS ======================
         function debounce(func, timeout = 300) {
             let timer;
@@ -836,67 +967,85 @@
         function getStatusBadgeClass(status) {
             switch (status) {
                 case 'Dipinjam': return 'badge-warning';
-                case 'Dikembalikan': return 'badge-primary';
+                case 'Dikembalikan':
+                case 'Dikembalikan (Belum Lunas)': return 'badge-primary';
                 case 'Lunas': return 'badge-success';
                 default: return 'badge-secondary';
             }
         }
 
-        function showAlert(type, message) {
-            try {
-                const alertContainer = document.getElementById('alertContainer');
-                if (!alertContainer) return;
+        function updatePaginationControls(totalPages) {
+            const btnPrev = document.getElementById('btnPrev');
+            const btnNext = document.getElementById('btnNext');
+            
+            btnPrev.disabled = currentPage <= 1;
+            btnNext.disabled = currentPage >= totalPages || totalPages === 0;
+        }
 
-                const icons = {
-                    success: 'fa-check-circle',
-                    error: 'fa-times-circle',
-                    warning: 'fa-exclamation-triangle',
-                    info: 'fa-info-circle'
-                };
-                
-                const alertEl = document.createElement('div');
-                alertEl.className = `alert alert-${type} alert-dismissible fade show animate__animated animate__fadeInRight`;
-                alertEl.innerHTML = `
-                    <div class="d-flex align-items-center">
-                        <i class="fas ${icons[type] || 'fa-bell'} me-2"></i>
-                        <div>${message}</div>
-                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                `;
-                
-                alertContainer.appendChild(alertEl);
-                
-                setTimeout(() => {
-                    alertEl.classList.remove('show');
-                    setTimeout(() => alertEl.remove(), 150);
-                }, 3000);
-            } catch (error) {
-                console.error("Error showing alert:", error);
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadRiwayat();
             }
         }
 
-        function showLoading(text = 'Memproses...') {
-            try {
-                const loadingText = document.getElementById('loadingText');
-                const loadingOverlay = document.getElementById('loadingOverlay');
-                if (loadingText && loadingOverlay) {
-                    loadingText.textContent = text;
-                    loadingOverlay.style.display = 'flex';
-                }
-            } catch (error) {
-                console.error("Error showing loading:", error);
+        function nextPage() {
+            currentPage++;
+            loadRiwayat();
+        }
+
+        function showLoading(message = 'Memproses...') {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadingText = document.getElementById('loadingText');
+            
+            if (loadingOverlay && loadingText) {
+                loadingText.textContent = message;
+                loadingOverlay.style.display = 'flex';
             }
         }
 
         function hideLoading() {
-            try {
-                const loadingOverlay = document.getElementById('loadingOverlay');
-                if (loadingOverlay) {
-                    loadingOverlay.style.display = 'none';
-                }
-            } catch (error) {
-                console.error("Error hiding loading:", error);
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'none';
             }
+        }
+
+        function showAlert(type, message) {
+            const alertContainer = document.getElementById('alertContainer');
+            if (!alertContainer) return;
+
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-times-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+
+            const alertClass = {
+                success: 'alert-success',
+                error: 'alert-danger',
+                warning: 'alert-warning',
+                info: 'alert-info'
+            };
+
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert ${alertClass[type]} alert-dismissible fade show animate__animated animate__fadeInRight`;
+            alertDiv.setAttribute('role', 'alert');
+            
+            alertDiv.innerHTML = `
+                <i class="fas ${icons[type]} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+
+            alertContainer.appendChild(alertDiv);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                alertDiv.classList.add('animate__fadeOutRight');
+                setTimeout(() => alertDiv.remove(), 500);
+            }, 5000);
         }
 
         function getFirstDayOfMonth() {
@@ -904,16 +1053,15 @@
             return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
         }
 
-        function getCurrentWeek() {
-            const date = new Date();
-            date.setHours(0, 0, 0, 0);
-            date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
-            const week1 = new Date(date.getFullYear(), 0, 4);
-            return date.getFullYear() + '-W' + 
-                   Math.round(((date - week1) / 86400000 + week1.getDay() + 1) / 7).toString().padStart(2, '0');
+        function searchPeminjaman() {
+            const searchTerm = document.getElementById('searchPeminjaman').value.toLowerCase();
+            updateTabelPengembalian();
         }
 
-        // Implement other functions as needed...
+        function searchRiwayat() {
+            currentPage = 1;
+            loadRiwayat();
+        }
     </script>
 </body>
 </html>
