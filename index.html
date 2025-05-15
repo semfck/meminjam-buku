@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Peminjaman Buku Perpustakaan</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        /* Your existing CSS styles here */
+        :root {
+            --primary-color: #4361ee;
+            --primary-light: #e6e9ff;
+            --secondary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+        
+        /* Rest of your CSS styles */
+    </style>
+</head>
+<body>
+    <!-- Your existing HTML structure -->
+    <div id="alertContainer" class="position-fixed top-0 end-0 p-3"></div>
+
+    <div class="app-container animate__animated animate__fadeIn">
+        <!-- Keep all your existing HTML content -->
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // ====================== SUPABASE INITIALIZATION ======================
+        const SUPABASE_URL = 'https://xqnlchcbxekwulncjvfy.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxbmxjaGNieGVrd3VsbmNqdmZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNzcxNzksImV4cCI6MjA2Mjg1MzE3OX0.j8nyrPIp64bJL_WziUE8ceSvwrSU0C8VHTd4-qGl8D4';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ====================== GLOBAL CONSTANTS ======================
+        const DENDA_PER_HARI = 5000;
+        const ITEMS_PER_PAGE = 10;
+
+        // ====================== GLOBAL VARIABLES ======================
+        let peminjamanList = [];
+        let currentInvoice = null;
+        let currentPage = 1;
+        let reportChart = null;
+        
+        // Initialize Bootstrap components
+        const toastEl = document.getElementById('liveToast');
+        const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+        const pengembalianModal = new bootstrap.Modal(document.getElementById('pengembalianModal'));
+        const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+
+        // ====================== INITIALIZATION ======================
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Set default dates
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('tanggalPinjam').value = today;
+                document.getElementById('modalTanggalKembali').value = today;
+                document.getElementById('filterDari').value = getFirstDayOfMonth();
+                document.getElementById('filterSampai').value = today;
+                document.getElementById('reportDate').value = getCurrentWeek();
+                
+                // Event listeners for due date calculation
+                document.getElementById('lamaPinjam').addEventListener('change', hitungJatuhTempo);
+                document.getElementById('tanggalPinjam').addEventListener('change', hitungJatuhTempo);
+                
+                // Setup other event listeners
+                setupEventListeners();
+                
+                // Load initial data
+                await Promise.all([
+                    loadPeminjaman(),
+                    loadRiwayat(),
+                    generateReport()
+                ]);
+                
+                // Show welcome message
+                showAlert('info', 'Selamat datang di Sistem Peminjaman Buku Perpustakaan');
+            } catch (error) {
+                console.error("Initialization error:", error);
+                showAlert('error', 'Gagal memuat aplikasi: ' + error.message);
+            }
+        });
+
+        // ====================== MAIN FUNCTIONS ======================
+        function setupEventListeners() {
+            // Form submission
+            document.getElementById('btnSimpan').addEventListener('click', simpanPeminjaman);
+
+            // Return functions
+            document.getElementById('searchPeminjaman').addEventListener('input', debounce(searchPeminjaman, 300));
+            document.getElementById('btnPrintInvoice').addEventListener('click', printInvoice);
+            document.getElementById('btnCloseInvoice').addEventListener('click', closeInvoice);
+            document.getElementById('modalTanggalKembali').addEventListener('change', previewDenda);
+            document.getElementById('btnProsesPengembalian').addEventListener('click', prosesPengembalian);
+            document.getElementById('btnRefreshPengembalian').addEventListener('click', () => loadPeminjaman());
+            document.getElementById('btnConfirmPayment').addEventListener('click', confirmPayment);
+
+            // History functions
+            document.getElementById('searchRiwayat').addEventListener('input', debounce(searchRiwayat, 300));
+            document.getElementById('btnFilter').addEventListener('click', () => loadRiwayat());
+            document.getElementById('btnPrev').addEventListener('click', prevPage);
+            document.getElementById('btnNext').addEventListener('click', nextPage);
+            document.getElementById('btnExportRiwayat').addEventListener('click', exportRiwayat);
+            document.getElementById('btnRefreshRiwayat').addEventListener('click', () => loadRiwayat());
+
+            // Report functions
+            document.getElementById('reportType').addEventListener('change', updateReportControls);
+            document.getElementById('btnGenerateReport').addEventListener('click', generateReport);
+            document.getElementById('btnExportReport').addEventListener('click', exportReport);
+            document.getElementById('btnRefreshLaporan').addEventListener('click', refreshLaporan);
+        }
+
+        function hitungJatuhTempo() {
+            try {
+                const tglPinjam = document.getElementById('tanggalPinjam').value;
+                const lamaPinjam = parseInt(document.getElementById('lamaPinjam').value);
+                
+                if (tglPinjam && lamaPinjam) {
+                    const tglPinjamObj = new Date(tglPinjam);
+                    const tglTempo = new Date(tglPinjamObj);
+                    tglTempo.setDate(tglPinjamObj.getDate() + (lamaPinjam * 7));
+                    
+                    document.getElementById('jatuhTempo').value = formatDate(tglTempo.toISOString().split('T')[0]);
+                    return tglTempo.toISOString().split('T')[0];
+                }
+                return null;
+            } catch (error) {
+                console.error("Error calculating due date:", error);
+                return null;
+            }
+        }
+
+        // ====================== BORROWING FUNCTIONS ======================
+        async function simpanPeminjaman() {
+            const form = document.getElementById('formPeminjaman');
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                showAlert('error', 'Harap isi semua field yang wajib dengan data yang valid!');
+                return;
+            }
+            
+            showLoading('Menyimpan data peminjaman...');
+            
+            try {
+                const peminjamanData = {
+                    nama: document.getElementById('namaPeminjam').value.trim(),
+                    no_hp: document.getElementById('noHp').value.trim(),
+                    email: document.getElementById('email').value.trim() || null,
+                    judul_buku: document.getElementById('judulBuku').value.trim(),
+                    kode_buku: document.getElementById('kodeBuku').value.trim(),
+                    tanggal_pinjam: document.getElementById('tanggalPinjam').value,
+                    tanggal_tempo: hitungJatuhTempo(),
+                    status: 'Dipinjam'
+                };
+
+                const { data, error } = await supabase
+                    .from('peminjaman')
+                    .insert([peminjamanData])
+                    .select();
+
+                if (error) throw error;
+
+                // Reset form
+                form.reset();
+                form.classList.remove('was-validated');
+                document.getElementById('tanggalPinjam').value = new Date().toISOString().split('T')[0];
+                document.getElementById('jatuhTempo').value = '';
+                
+                hideLoading();
+                showAlert('success', 'Peminjaman berhasil disimpan!');
+                
+                // Navigate to returns tab and refresh data
+                document.getElementById('pengembalian-tab').click();
+                await loadPeminjaman();
+            } catch (error) {
+                console.error("Error saving peminjaman:", error);
+                hideLoading();
+                showAlert('error', 'Gagal menyimpan data peminjaman: ' + error.message);
+            }
+        }
+
+        // ====================== DATA LOADING FUNCTIONS ======================
+        async function loadPeminjaman() {
+            showLoading('Memuat data peminjaman...');
+            
+            try {
+                const { data, error } = await supabase
+                    .from('peminjaman')
+                    .select('*')
+                    .is('tanggal_kembali', null)
+                    .order('tanggal_pinjam', { ascending: true });
+
+                if (error) throw error;
+
+                peminjamanList = data || [];
+                updateTabelPengembalian();
+            } catch (error) {
+                console.error("Error loading peminjaman:", error);
+                showAlert('error', 'Gagal memuat data peminjaman: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function loadRiwayat() {
+            showLoading('Memuat data riwayat...');
+            
+            try {
+                const dari = document.getElementById('filterDari').value;
+                const sampai = document.getElementById('filterSampai').value;
+                const searchTerm = document.getElementById('searchRiwayat').value.toLowerCase();
+                
+                let query = supabase
+                    .from('peminjaman')
+                    .select('*', { count: 'exact' })
+                    .gte('tanggal_pinjam', dari)
+                    .lte('tanggal_pinjam', sampai + 'T23:59:59')
+                    .order('tanggal_pinjam', { ascending: false });
+
+                // Apply pagination
+                const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+                query = query.range(startIndex, startIndex + ITEMS_PER_PAGE - 1);
+
+                const { data, error, count } = await query;
+
+                if (error) throw error;
+
+                // Filter data if search term exists
+                let filteredData = data || [];
+                if (searchTerm) {
+                    filteredData = filteredData.filter(item => 
+                        item.nama.toLowerCase().includes(searchTerm) || 
+                        item.judul_buku.toLowerCase().includes(searchTerm) || 
+                        item.kode_buku.toLowerCase().includes(searchTerm)
+                    );
+                }
+
+                updateRiwayatUI(filteredData, count || 0);
+            } catch (error) {
+                console.error("Error loading riwayat:", error);
+                showAlert('error', 'Gagal memuat data riwayat: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function updateRiwayatUI(data, totalCount = 0) {
+            const tbody = document.getElementById('riwayatBody');
+            tbody.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="text-center py-4">
+                            <i class="fas fa-book-open fa-2x mb-3 text-muted"></i>
+                            <p>Tidak ada data yang ditemukan</p>
+                        </td>
+                    </tr>
+                `;
+                updatePaginationControls(0);
+                return;
+            }
+
+            // Calculate total fines
+            const totalDenda = data.reduce((sum, p) => sum + (p.denda || 0), 0);
+            document.getElementById('totalData').textContent = totalCount;
+            document.getElementById('totalDenda').textContent = formatCurrency(totalDenda);
+
+            // Fill table
+            data.forEach((peminjaman, index) => {
+                const row = document.createElement('tr');
+                row.className = 'animate__animated animate__fadeIn';
+                const noUrut = ((currentPage - 1) * ITEMS_PER_PAGE) + index + 1;
+                
+                row.innerHTML = `
+                    <td>${noUrut}</td>
+                    <td>${peminjaman.nama}</td>
+                    <td>${peminjaman.judul_buku}</td>
+                    <td>${peminjaman.kode_buku}</td>
+                    <td>${formatDate(peminjaman.tanggal_pinjam)}</td>
+                    <td>${formatDate(peminjaman.tanggal_tempo)}</td>
+                    <td>${peminjaman.tanggal_kembali ? formatDate(peminjaman.tanggal_kembali) : '-'}</td>
+                    <td class="${peminjaman.hari_telat > 0 ? 'text-danger' : ''}">
+                        ${peminjaman.hari_telat > 0 ? `${peminjaman.hari_telat} hari` : '-'}
+                    </td>
+                    <td class="${peminjaman.denda > 0 ? 'text-danger fw-bold' : ''}">
+                        ${peminjaman.denda > 0 ? formatCurrency(peminjaman.denda) : '-'}
+                    </td>
+                    <td>
+                        <span class="status-badge ${getStatusBadgeClass(peminjaman.status)}">
+                            ${peminjaman.status}
+                        </span>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+
+            // Update pagination controls
+            updatePaginationControls(Math.ceil(totalCount / ITEMS_PER_PAGE));
+        }
+
+        // ====================== RETURN FUNCTIONS ======================
+        function updateTabelPengembalian() {
+            const tbody = document.getElementById('pengembalianBody');
+            tbody.innerHTML = '';
+
+            // Filter only active borrowings
+            const activePeminjaman = peminjamanList.filter(p => !p.tanggal_kembali);
+            
+            if (!activePeminjaman || activePeminjaman.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="fas fa-book-open fa-2x mb-3 text-muted"></i>
+                            <p>Tidak ada data peminjaman aktif</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Sort by borrowing date (oldest first)
+            activePeminjaman.sort((a, b) => new Date(a.tanggal_pinjam) - new Date(b.tanggal_pinjam));
+
+            // Fill table
+            activePeminjaman.forEach((peminjaman, index) => {
+                const row = document.createElement('tr');
+                row.className = 'animate__animated animate__fadeIn';
+                
+                // Check if overdue
+                const today = new Date();
+                const tglTempo = new Date(peminjaman.tanggal_tempo);
+                const isLate = today > tglTempo;
+                
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${peminjaman.nama}</td>
+                    <td>${peminjaman.judul_buku}</td>
+                    <td>${peminjaman.kode_buku}</td>
+                    <td>${formatDate(peminjaman.tanggal_pinjam)}</td>
+                    <td class="${isLate ? 'text-danger fw-bold' : ''}">
+                        ${formatDate(peminjaman.tanggal_tempo)}
+                        ${isLate ? '<i class="fas fa-exclamation-circle"></i>' : ''}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="openPengembalianModal('${peminjaman.id}')">
+                            <i class="fas fa-undo"></i> Proses
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        // ====================== UTILITY FUNCTIONS ======================
+        function debounce(func, timeout = 300) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => { func.apply(this, args); }, timeout);
+            };
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            try {
+                const options = {
+                    weekday: 'short',
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                };
+                return new Date(dateString).toLocaleDateString('id-ID', options);
+            } catch (error) {
+                console.error("Error formatting date:", error);
+                return dateString;
+            }
+        }
+
+        function formatCurrency(amount) {
+            try {
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0
+                }).format(amount || 0);
+            } catch (error) {
+                console.error("Error formatting currency:", error);
+                return 'Rp' + (amount || 0).toLocaleString('id-ID');
+            }
+        }
+
+        function getStatusBadgeClass(status) {
+            switch (status) {
+                case 'Dipinjam': return 'badge-warning';
+                case 'Dikembalikan': return 'badge-primary';
+                case 'Lunas': return 'badge-success';
+                default: return 'badge-secondary';
+            }
+        }
+
+        function showAlert(type, message) {
+            try {
+                const alertContainer = document.getElementById('alertContainer');
+                if (!alertContainer) return;
+
+                const icons = {
+                    success: 'fa-check-circle',
+                    error: 'fa-times-circle',
+                    warning: 'fa-exclamation-triangle',
+                    info: 'fa-info-circle'
+                };
+                
+                const alertEl = document.createElement('div');
+                alertEl.className = `alert alert-${type} alert-dismissible fade show animate__animated animate__fadeInRight`;
+                alertEl.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="fas ${icons[type] || 'fa-bell'} me-2"></i>
+                        <div>${message}</div>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                
+                alertContainer.appendChild(alertEl);
+                
+                setTimeout(() => {
+                    alertEl.classList.remove('show');
+                    setTimeout(() => alertEl.remove(), 150);
+                }, 3000);
+            } catch (error) {
+                console.error("Error showing alert:", error);
+            }
+        }
+
+        function showLoading(text = 'Memproses...') {
+            try {
+                const loadingText = document.getElementById('loadingText');
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                if (loadingText && loadingOverlay) {
+                    loadingText.textContent = text;
+                    loadingOverlay.style.display = 'flex';
+                }
+            } catch (error) {
+                console.error("Error showing loading:", error);
+            }
+        }
+
+        function hideLoading() {
+            try {
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                if (loadingOverlay) {
+                    loadingOverlay.style.display = 'none';
+                }
+            } catch (error) {
+                console.error("Error hiding loading:", error);
+            }
+        }
+
+        function getFirstDayOfMonth() {
+            const date = new Date();
+            return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+        }
+
+        function getCurrentWeek() {
+            const date = new Date();
+            date.setHours(0, 0, 0, 0);
+            date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+            const week1 = new Date(date.getFullYear(), 0, 4);
+            return date.getFullYear() + '-W' + 
+                   Math.round(((date - week1) / 86400000 + week1.getDay() + 1) / 7).toString().padStart(2, '0');
+        }
+
+        // Implement other functions as needed...
+    </script>
+</body>
+</html>
