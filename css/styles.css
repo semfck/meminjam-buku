@@ -255,3 +255,63 @@ body {
 .text-center { text-align: center; }
 .d-flex { display: flex; }
 .gap-2 { gap: 0.5rem; }
+
+:root {
+  --primary-color: #4361ee;
+  --primary-light: #e6e9ff;
+  --secondary-color: #2c3e50;
+  --accent-color: #e74c3c;
+  --light-color: #f8f9fa;
+  --dark-color: #343a40;
+  --success-color: #2ecc71;
+  --warning-color: #f39c12;
+  --danger-color: #e74c3c;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f7fa;
+  color: #333;
+  line-height: 1.6;
+}
+
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Tambahkan semua style yang sudah ada sebelumnya */
+
+/* Style tambahan untuk laporan */
+.card-chart {
+  border: none;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  padding: 20px;
+  margin-bottom: 20px;
+  background: white;
+}
+
+.stat-card {
+  border-left: 4px solid var(--primary-color);
+  padding: 15px;
+  margin-bottom: 15px;
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+}
+
+.stat-card h3 {
+  font-size: 1.5rem;
+  margin-bottom: 5px;
+  color: var(--primary-color);
+}
+
+.stat-card p {
+  margin-bottom: 0;
+  color: var(--secondary-color);
+}
