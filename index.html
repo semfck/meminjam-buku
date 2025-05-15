@@ -248,6 +248,226 @@
             }
         }
     </style>
+<head>
+    <!-- Meta tags dan CSS sebelumnya -->
+    <style>
+        /* Tambahan style untuk status buku */
+        .status-available {
+            background-color: var(--success-color);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Modal sebelumnya -->
+
+    <script>
+        class LibrarySystem {
+            constructor() {
+                this.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                this.currentInvoice = null;
+                this.currentPage = 1;
+                this.init();
+            }
+
+            async init() {
+                this.setupEventListeners();
+                this.setDefaultDates();
+                await this.loadAllData();
+                this.showAlert('info', 'Selamat datang di Sistem Peminjaman Buku');
+            }
+
+            setDefaultDates() {
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('tanggalPinjam').value = today;
+                document.getElementById('modalTanggalKembali').value = today;
+                document.getElementById('filterDari').value = this.getFirstDayOfMonth();
+                document.getElementById('filterSampai').value = today;
+            }
+
+            async loadAllData() {
+                await this.loadLoans();
+                await this.loadBooks();
+                await this.loadHistory();
+            }
+
+            // ====================== EVENT HANDLERS ======================
+            setupEventListeners() {
+                document.getElementById('formPeminjaman').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleSubmit();
+                });
+
+                // Event listeners lainnya...
+            }
+
+            // ====================== BOOK MANAGEMENT ======================
+            async loadBooks() {
+                showLoading('Memuat data buku...');
+                try {
+                    const { data, error } = await this.supabase
+                        .from('buku')
+                        .select('*')
+                        .order('judul', { ascending: true });
+
+                    if (error) throw error;
+                    
+                    this.bukuList = data || [];
+                    this.updateBookTable();
+                } catch (error) {
+                    this.handleError(error, 'Gagal memuat data buku');
+                } finally {
+                    hideLoading();
+                }
+            }
+
+            updateBookTable() {
+                const tbody = document.getElementById('bookTableBody');
+                tbody.innerHTML = '';
+
+                const availableBooks = this.bukuList.filter(book => 
+                    !this.peminjamanList.some(loan => 
+                        loan.kode_buku === book.kode && !loan.tanggal_kembali
+                    )
+                );
+
+                availableBooks.forEach((book, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${book.judul}</td>
+                        <td>${book.pengarang}</td>
+                        <td>${book.tahun_terbit}</td>
+                        <td>${book.kategori}</td>
+                        <td><span class="status-available status-badge">Tersedia</span></td>
+                        <td>
+                            <button class="btn btn-primary btn-sm" 
+                                onclick="librarySystem.pinjamBuku('${book.id}')">
+                                <i class="fas fa-hand-holding me-1"></i>Pinjam
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+
+            // ====================== LOAN MANAGEMENT ======================
+            async handleSubmit() {
+                if (!this.validateForm()) return;
+
+                const formData = {
+                    kode_buku: document.getElementById('bookId').value,
+                    nama_peminjam: document.getElementById('namaPeminjam').value,
+                    no_hp: document.getElementById('noHp').value,
+                    tanggal_pinjam: document.getElementById('tanggalPinjam').value,
+                    jatuh_tempo: this.hitungJatuhTempo(),
+                    lama_pinjam: document.getElementById('lamaPinjam').value,
+                    catatan: document.getElementById('catatan').value
+                };
+
+                showLoading('Menyimpan peminjaman...');
+                try {
+                    const { error } = await this.supabase
+                        .from('peminjaman')
+                        .insert([formData]);
+
+                    if (error) throw error;
+
+                    this.showAlert('success', 'Peminjaman berhasil disimpan!');
+                    this.resetForm();
+                    await this.loadAllData();
+                } catch (error) {
+                    this.handleError(error, 'Gagal menyimpan peminjaman');
+                } finally {
+                    hideLoading();
+                }
+            }
+
+            validateForm() {
+                const phoneRegex = /^08\d{8,11}$/;
+                const noHp = document.getElementById('noHp').value;
+                
+                if (!phoneRegex.test(noHp)) {
+                    this.showAlert('error', 'Format nomor HP tidak valid');
+                    return false;
+                }
+
+                return true;
+            }
+
+            // ====================== RETURN MANAGEMENT ======================
+            async processReturn() {
+                showLoading('Memproses pengembalian...');
+                try {
+                    const returnDate = document.getElementById('modalTanggalKembali').value;
+                    const dueDate = new Date(this.currentInvoice.jatuh_tempo);
+                    const diffDays = Math.ceil((new Date(returnDate) - dueDate) / (1000 * 60 * 60 * 24));
+                    
+                    const updateData = {
+                        tanggal_kembali: returnDate,
+                        hari_telat: diffDays > 0 ? diffDays : 0,
+                        denda: diffDays > 0 ? diffDays * DENDA_PER_HARI : 0,
+                        status: diffDays > 0 ? 'Terlambat' : 'Dikembalikan'
+                    };
+
+                    const { error } = await this.supabase
+                        .from('peminjaman')
+                        .update(updateData)
+                        .eq('id', this.currentInvoice.id);
+
+                    if (error) throw error;
+
+                    if (updateData.denda > 0) {
+                        this.showInvoice(updateData);
+                    }
+
+                    pengembalianModal.hide();
+                    this.showAlert('success', 'Pengembalian berhasil diproses!');
+                    await this.loadAllData();
+                } catch (error) {
+                    this.handleError(error, 'Gagal memproses pengembalian');
+                } finally {
+                    hideLoading();
+                }
+            }
+
+            // ====================== HELPER FUNCTIONS ======================
+            showInvoice(data) {
+                document.getElementById('invoiceHariTelat').textContent = data.hari_telat;
+                document.getElementById('invoiceDenda').textContent = this.formatRupiah(data.denda);
+                document.getElementById('invoiceTotal').textContent = this.formatRupiah(data.denda);
+                
+                new bootstrap.Modal('#invoiceModal').show();
+            }
+
+            formatRupiah(amount) {
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0
+                }).format(amount);
+            }
+
+            handleError(error, message = 'Terjadi kesalahan') {
+                console.error(error);
+                this.showAlert('error', `${message}: ${error.message}`);
+            }
+
+            showAlert(type, message) {
+                const alert = document.createElement('div');
+                alert.className = `alert alert-${type} animate__animated animate__fadeInRight`;
+                alert.role = 'alert';
+                alert.innerHTML = `
+                    <i class="fas fa-${type === 'error' ? 'times-circle' : 'check-circle'} me-2"></i>
+                    ${message}
+                `;
+                document.getElementById('alertContainer').appendChild(alert);
+                setTimeout(() => alert.remove(), 5000);
+            }
+        }
+
+        // Inisialisasi sistem
+        const librarySystem = new LibrarySystem();
+    </script>
 </head>
 <body>
     <!-- Loading Overlay -->
