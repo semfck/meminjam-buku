@@ -1,4 +1,4 @@
-/* ================ VARIABLES ================ */
+/* styles.css */
 :root {
   --primary-color: #4361ee;
   --primary-light: #e6e9ff;
@@ -14,7 +14,6 @@
   --transition: all 0.3s ease;
 }
 
-/* ================ BASE STYLES ================ */
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f5f7fa;
@@ -28,36 +27,17 @@ body {
   padding: 20px;
 }
 
-/* ================ NAVBAR ================ */
-.navbar {
-  background-color: white;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-}
-
 .navbar-brand {
   font-weight: 700;
   color: var(--primary-color);
 }
 
-.nav-tabs .nav-link {
-  color: var(--secondary-color);
-  font-weight: 500;
-}
-
-.nav-tabs .nav-link.active {
-  color: var(--primary-color);
-  font-weight: 600;
-  border-bottom: 2px solid var(--primary-color);
-}
-
-/* ================ CARDS ================ */
 .card {
   border: none;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
-  transition: var(--transition);
   margin-bottom: 20px;
+  transition: var(--transition);
 }
 
 .card:hover {
@@ -71,7 +51,43 @@ body {
   border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
 }
 
-/* ================ TABLES ================ */
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+  background-color: #3a56d4;
+  border-color: #3a56d4;
+}
+
+.status-badge {
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.badge-warning {
+  background-color: var(--warning-color);
+  color: white;
+}
+
+.badge-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.badge-success {
+  background-color: var(--success-color);
+  color: white;
+}
+
+.badge-secondary {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
 .table-responsive {
   border-radius: var(--border-radius);
   overflow: hidden;
@@ -89,12 +105,12 @@ th {
   font-weight: 600;
 }
 
-/* ================ FORMS ================ */
 .form-control:focus, .form-select:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
 }
 
+/* Validation styles */
 .form-control:invalid, .form-select:invalid {
   border-color: var(--danger-color);
 }
@@ -114,25 +130,59 @@ th {
   display: block;
 }
 
-/* ================ BUTTONS ================ */
-.btn-primary {
+#loadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 9999;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+  color: var(--primary-color);
+}
+
+#alertContainer {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1100;
+  max-width: 400px;
+}
+
+.alert {
+  box-shadow: var(--box-shadow);
+}
+
+.nav-tabs .nav-link {
+  color: var(--secondary-color);
+  font-weight: 500;
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--primary-color);
+  font-weight: 600;
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.pagination .page-item.active .page-link {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
 }
 
-.btn-primary:hover {
-  background-color: #3a56d4;
-  border-color: #3a56d4;
+.pagination .page-link {
+  color: var(--primary-color);
 }
 
-/* ================ STATUS BADGES ================ */
-.status-badge {
-  padding: 5px 10px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
+/* Book status colors */
 .status-borrowed {
   background-color: var(--warning-color);
   color: white;
@@ -165,41 +215,36 @@ th {
   font-size: 0.85rem;
 }
 
-/* ================ LOADING OVERLAY ================ */
-#loadingOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.8);
-  z-index: 9999;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
+/* Action buttons */
+.action-buttons button {
+  padding: 5px 10px;
+  margin-right: 5px;
+  font-size: 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition);
 }
 
-.spinner-border {
-  width: 3rem;
-  height: 3rem;
-  color: var(--primary-color);
+.delete-btn {
+  background-color: var(--danger-color);
+  color: white;
 }
 
-/* ================ ALERTS ================ */
-#alertContainer {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1100;
-  max-width: 400px;
+.delete-btn:hover {
+  background-color: #c82333;
 }
 
-.alert {
-  box-shadow: var(--box-shadow);
+.edit-btn {
+  background-color: var(--warning-color);
+  color: #212529;
 }
 
-/* ================ SEARCH SUGGESTIONS ================ */
+.edit-btn:hover {
+  background-color: #e0a800;
+}
+
+/* Search suggestions */
 .search-suggestions {
   position: absolute;
   width: 100%;
@@ -221,7 +266,7 @@ th {
   background-color: #f1f1f1;
 }
 
-/* ================ MODALS ================ */
+/* Invoice Specific Styles */
 #invoiceModal .modal-content {
   border-radius: 10px;
   overflow: hidden;
@@ -259,171 +304,68 @@ th {
   border-top: 1px solid #000;
 }
 
-/* ================ PAGINATION ================ */
-.pagination .page-item.active .page-link {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-}
-
-.pagination .page-link {
-  color: var(--primary-color);
-}
-
-/* ================ RESPONSIVE ADJUSTMENTS ================ */
+/* Responsive adjustments */
 @media (max-width: 768px) {
   .app-container {
-    padding: 10px;
+      padding: 10px;
   }
   
   .card {
-    margin-bottom: 15px;
+      margin-bottom: 15px;
   }
   
   #alertContainer {
-    max-width: 90%;
-    left: 5%;
-    right: 5%;
-    top: 10px;
+      max-width: 90%;
+      left: 5%;
+      right: 5%;
+      top: 10px;
   }
   
+  .action-buttons button {
+      margin-bottom: 5px;
+      width: 100%;
+  }
+
   #invoiceModal .modal-dialog {
-    margin: 10px;
+      margin: 10px;
   }
   
   #invoiceModal .text-md-end {
-    text-align: left !important;
+      text-align: left !important;
   }
   
   #invoiceModal .modal-body {
-    padding: 15px;
+      padding: 15px;
   }
 }
 
 @media print {
   body * {
-    visibility: hidden;
+      visibility: hidden;
   }
   #invoiceModal .modal-content,
   #invoiceModal .modal-content * {
-    visibility: visible;
+      visibility: visible;
   }
   #invoiceModal .modal-content {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    border: none;
-    box-shadow: none;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      border: none;
+      box-shadow: none;
   }
   .no-print {
-    display: none !important;
+      display: none !important;
   }
   #invoiceModal .modal-header {
-    background-color: #4361ee !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+      background-color: #4361ee !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
   }
   #invoiceModal .table-light th {
-    background-color: #f8f9fa !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+      background-color: #f8f9fa !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
   }
-}
-
-/* ================ UTILITY CLASSES ================ */
-.text-muted {
-  color: #6c757d !important;
-}
-
-.mt-3 {
-  margin-top: 1rem !important;
-}
-
-.mt-4 {
-  margin-top: 1.5rem !important;
-}
-
-.mb-3 {
-  margin-bottom: 1rem !important;
-}
-
-.mb-4 {
-  margin-bottom: 1.5rem !important;
-}
-
-.me-1 {
-  margin-right: 0.25rem !important;
-}
-
-.me-2 {
-  margin-right: 0.5rem !important;
-}
-
-.ms-2 {
-  margin-left: 0.5rem !important;
-}
-
-.px-4 {
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
-}
-
-.py-4 {
-  padding-top: 1.5rem !important;
-  padding-bottom: 1.5rem !important;
-}
-
-.text-center {
-  text-align: center !important;
-}
-
-.d-flex {
-  display: flex !important;
-}
-
-.justify-content-between {
-  justify-content: space-between !important;
-}
-
-.align-items-center {
-  align-items: center !important;
-}
-
-.w-100 {
-  width: 100% !important;
-}
-
-.d-none {
-  display: none !important;
-}
-
-/* Tambahkan di bagian CSS */
-.tab-content {
-  padding: 20px 0;
-}
-
-.tab-pane {
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.nav-tabs .nav-link {
-  border: none;
-  border-bottom: 3px solid transparent;
-  padding: 10px 15px;
-  transition: all 0.3s ease;
-}
-
-.nav-tabs .nav-link:hover {
-  border-bottom-color: var(--primary-light);
-}
-
-.nav-tabs .nav-link.active {
-  border-bottom-color: var(--primary-color);
-  color: var(--primary-color);
-  background: transparent;
 }
