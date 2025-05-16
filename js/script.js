@@ -1036,6 +1036,141 @@ async function prosesPengembalian() {
   }
 }
 
+async function searchBooks(query) {
+    // Pencarian lokal
+    const localResults = localSearch(query);
+    
+    // Pencarian Google Books
+    const googleResults = await searchGoogleBooks(query);
+    
+    // Gabungkan dan beri ranking hasil
+    return rankResults([...localResults, ...googleResults], query);
+  }
+  
+  function localSearch(query) {
+    // Implementasi pencarian lokal sebelumnya
+  }
+  
+  async function searchGoogleBooks(query) {
+    try {
+      const response = await fetch(
+        `${GOOGLE_BOOKS_API_URL}?q=${encodeURIComponent(query)}&key=${GOOGLE_BOOKS_API_KEY}`
+      );
+      const data = await response.json();
+      return processGoogleResults(data.items);
+    } catch (error) {
+      console.error('Error fetching from Google Books:', error);
+      return [];
+    }
+  }
+  
+  function processGoogleResults(items) {
+    return items.map(item => ({
+      source: 'google',
+      title: item.volumeInfo.title,
+      authors: item.volumeInfo.authors || [],
+      description: item.volumeInfo.description,
+      publishedDate: item.volumeInfo.publishedDate,
+      isbn: item.volumeInfo.industryIdentifiers?.[0]?.identifier || '',
+      thumbnail: item.volumeInfo.imageLinks?.thumbnail,
+      previewLink: item.volumeInfo.previewLink
+    }));
+  }
+
+  function rankResults(results, query) {
+    const queryTerms = query.toLowerCase().split(' ');
+    
+    return results.sort((a, b) => {
+      // Hitung skor relevansi
+      const scoreA = calculateRelevanceScore(a, queryTerms);
+      const scoreB = calculateRelevanceScore(b, queryTerms);
+      
+      return scoreB - scoreA;
+    });
+  }
+  
+  function calculateRelevanceScore(book, queryTerms) {
+    let score = 0;
+    const title = book.title.toLowerCase();
+    const authors = book.authors.join(' ').toLowerCase();
+    
+    queryTerms.forEach(term => {
+      // Prioritas judul
+      if (title.includes(term)) score += 5;
+      
+      // Prioritas penulis
+      if (authors.includes(term)) score += 3;
+      
+      // Prioritas deskripsi
+      if (book.description?.toLowerCase().includes(term)) score += 1;
+    });
+    
+    // Prioritas hasil lokal
+    if (book.source === 'local') score += 2;
+    
+    return score;
+  }
+
+  let currentRequest = null;
+
+  async function handleSearchInput(query) {
+    // Batalkan request sebelumnya
+    if (currentRequest) currentRequest.cancel();
+    
+    // Tampikan suggestions
+    showSuggestions(await getAutocompleteSuggestions(query));
+    
+    // Lakukan pencarian
+    const results = await searchBooks(query);
+    displayResults(results);
+  }
+  
+  async function getAutocompleteSuggestions(query) {
+    try {
+      currentRequest = axios.CancelToken.source();
+      const response = await axios.get(
+        `https://suggestqueries.google.com/complete/search?client=firefox&q=${query}&ds=books`,
+        { cancelToken: currentRequest.token }
+      );
+      return response.data[1];
+    } catch (error) {
+      if (!axios.isCancel(error)) {
+        console.error('Autocomplete error:', error);
+      }
+      return [];
+    }
+  }
+
+  function displayResults(results) {
+    const container = document.getElementById('results-container');
+    container.innerHTML = '';
+    
+    results.forEach(book => {
+      const div = document.createElement('div');
+      div.className = 'book-result';
+      div.innerHTML = `
+        <div class="book-header">
+          ${book.thumbnail ? 
+            `<img src="${book.thumbnail}" alt="${book.title}" class="book-thumbnail">` : ''}
+          <div>
+            <h3>${highlightMatches(book.title, query)}</h3>
+            <p class="authors">${book.authors.map(author => highlightMatches(author, query)).join(', ')}</p>
+            ${book.source === 'google' ? 
+              `<a href="${book.previewLink}" target="_blank" class="preview-link">Preview</a>` : ''}
+          </div>
+        </div>
+        ${book.description ? 
+          `<p class="description">${truncateText(book.description, 200)}</p>` : ''}
+      `;
+      container.appendChild(div);
+    });
+  }
+  
+  function highlightMatches(text, query) {
+    const regex = new RegExp(`(${query.split(' ').join('|')})`, 'gi');
+    return text.replace(regex, '<span class="highlight">$1</span>');
+  }
+  
 // ====================== HELPER FUNCTIONS ======================
 
 /**
