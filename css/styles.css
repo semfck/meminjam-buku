@@ -1,266 +1,4 @@
-/* ====================== BASE STYLES ====================== */
-:root {
-  --primary-color: #2c3e50;
-  --secondary-color: #3498db;
-  --success-color: #27ae60;
-  --danger-color: #e74c3c;
-  --warning-color: #f1c40f;
-  --light-color: #ecf0f1;
-  --dark-color: #2c3e50;
-  --border-radius: 0.5rem;
-  --box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
-  --transition: all 0.3s ease;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  line-height: 1.6;
-  color: var(--dark-color);
-  background-color: #f8f9fa;
-}
-
-/* ====================== LAYOUT & CONTAINERS ====================== */
-.app-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
-.card {
-  background: white;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  margin-bottom: 2rem;
-  overflow: hidden;
-  transition: var(--transition);
-}
-
-.card:hover {
-  transform: translateY(-0.25rem);
-}
-
-.card-header {
-  background-color: var(--primary-color);
-  color: white;
-  padding: 1.25rem;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.card-body {
-  padding: 1.5rem;
-}
-
-/* ====================== FORM STYLES ====================== */
-.form-label {
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-  color: var(--dark-color);
-}
-
-.form-control {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ced4da;
-  border-radius: var(--border-radius);
-  transition: var(--transition);
-}
-
-.form-control:focus {
-  border-color: var(--secondary-color);
-  box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
-}
-
-.form-select {
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 1em;
-}
-
-/* ====================== TABLE STYLES ====================== */
-.table-responsive {
-  border-radius: var(--border-radius);
-  overflow: hidden;
-  box-shadow: var(--box-shadow);
-}
-
-.table {
-  width: 100%;
-  margin-bottom: 0;
-  background-color: white;
-}
-
-.table th {
-  background-color: var(--primary-color);
-  color: white;
-  padding: 1rem;
-  font-weight: 600;
-}
-
-.table td {
-  padding: 0.75rem;
-  vertical-align: middle;
-}
-
-.table-striped tbody tr:nth-of-type(odd) {
-  background-color: rgba(236, 240, 241, 0.5);
-}
-
-/* ====================== BUTTONS & BADGES ====================== */
-.btn {
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius);
-  transition: var(--transition);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.btn-primary {
-  background-color: var(--secondary-color);
-  border-color: var(--secondary-color);
-}
-
-.btn-primary:hover {
-  background-color: #2980b9;
-  transform: translateY(-1px);
-}
-
-.status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.bg-success { background-color: var(--success-color); }
-.bg-warning { background-color: var(--warning-color); }
-.bg-danger { background-color: var(--danger-color); }
-
-/* ====================== ALERTS & LOADING ====================== */
-.alert {
-  border-radius: var(--border-radius);
-  padding: 1rem;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.alert i {
-  font-size: 1.25rem;
-}
-
-#loadingOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.9);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  backdrop-filter: blur(2px);
-}
-
-.spinner-border {
-  width: 3rem;
-  height: 3rem;
-  border-width: 0.25em;
-}
-
-/* ====================== MODAL CUSTOMIZATION ====================== */
-.modal-content {
-  border-radius: var(--border-radius);
-  border: none;
-  box-shadow: var(--box-shadow);
-}
-
-.modal-header {
-  background-color: var(--primary-color);
-  color: white;
-  border-radius: var(--border-radius) var(--border-radius) 0 0;
-}
-
-.modal-title {
-  font-weight: 600;
-}
-
-/* ====================== RESPONSIVE DESIGN ====================== */
-@media (max-width: 768px) {
-  .app-container {
-    padding: 1rem;
-  }
-
-  .table-responsive {
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .table thead {
-    display: none;
-  }
-
-  .table tr {
-    display: block;
-    margin-bottom: 1rem;
-    box-shadow: var(--box-shadow);
-    border-radius: var(--border-radius);
-  }
-
-  .table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem;
-  }
-
-  .table td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    margin-right: 1rem;
-    color: var(--primary-color);
-  }
-}
-
-@media (max-width: 768px) {
-  .container { padding: 10px; }
-  button { width: 100%; }
-}
-
-@media (max-width: 576px) {
-  .card-header {
-    font-size: 1.1rem;
-  }
-
-  .btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .form-control {
-    padding: 0.5rem;
-  }
-}
-
-/* ====================== UTILITY CLASSES ====================== */
-.animate__animated { animation-duration: 0.5s; }
-.mb-3 { margin-bottom: 1rem; }
-.mt-3 { margin-top: 1rem; }
-.text-center { text-align: center; }
-.d-flex { display: flex; }
-.gap-2 { gap: 0.5rem; }
-
+/* ================ VARIABLES ================ */
 :root {
   --primary-color: #4361ee;
   --primary-light: #e6e9ff;
@@ -271,268 +9,279 @@ body {
   --success-color: #2ecc71;
   --warning-color: #f39c12;
   --danger-color: #e74c3c;
-  --border-radius: 8px;
-  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --border-radius: 0.5rem;
+  --box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
   --transition: all 0.3s ease;
 }
 
+/* ================ BASE STYLES ================ */
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background-color: #f5f7fa;
-  color: #333;
+  color: var(--secondary-color);
   line-height: 1.6;
-}
-
-body {
-  font-family: 'Poppins', sans-serif;
-  background: #f5f5f5;
+  min-height: 100vh;
 }
 
 .app-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 1.25rem;
 }
 
-/* Tambahkan semua style yang sudah ada sebelumnya */
+/* ================ COMPONENTS ================ */
+/* Navbar */
+.navbar {
+  box-shadow: var(--box-shadow);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(5px);
+}
 
-/* Style tambahan untuk laporan */
-.card-chart {
+.navbar-brand {
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: -0.5px;
+  
+  i {
+    color: inherit;
+  }
+}
+
+.nav-tabs {
+  border-bottom: 2px solid var(--primary-light);
+  
+  .nav-link {
+    color: var(--secondary-color);
+    border: none;
+    position: relative;
+    
+    &.active {
+      color: var(--primary-color);
+      font-weight: 600;
+      
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--primary-color);
+      }
+    }
+  }
+}
+
+/* Cards */
+.card {
   border: none;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
-  padding: 20px;
-  margin-bottom: 20px;
-  background: white;
+  transition: var(--transition);
+  background: rgba(255, 255, 255, 0.9);
+  
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.1);
+  }
+  
+  .card-header {
+    background: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    
+    i {
+      margin-right: 0.5rem;
+    }
+  }
+  
+  .card-body {
+    padding: 1.5rem;
+  }
 }
 
-.stat-card {
-  border-left: 4px solid var(--primary-color);
-  padding: 15px;
-  margin-bottom: 15px;
-  background: white;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-}
-
-.stat-card h3 {
-  font-size: 1.5rem;
-  margin-bottom: 5px;
-  color: var(--primary-color);
-}
-
-.stat-card p {
+/* Tables */
+.table {
+  --bs-table-bg: transparent;
   margin-bottom: 0;
-  color: var(--secondary-color);
-}
-
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  body {
-      background-color: #121212;
-      color: #e0e0e0;
+  
+  thead {
+    background: var(--primary-light);
+    th {
+      font-weight: 600;
+      padding: 0.75rem;
+    }
   }
   
-  .card, .stat-card, .table {
-      background-color: #1e1e1e;
-      color: #e0e0e0;
+  tbody tr {
+    transition: var(--transition);
+    
+    &:hover {
+      background-color: rgba(var(--primary-color), 0.03);
+    }
+    
+    td {
+      padding: 0.75rem;
+      vertical-align: middle;
+    }
   }
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 1.25rem;
+  font-size: 0.8rem;
+  font-weight: 500;
   
-  .table {
-      --bs-table-color: #e0e0e0;
-      --bs-table-bg: #1e1e1e;
-      --bs-table-border-color: #444;
-  }
+  &-available { background: var(--success-color); color: white; }
+  &-borrowed { background: var(--warning-color); color: white; }
+  &-late { background: var(--danger-color); color: white; }
+  &-returned { background: var(--secondary-color); color: white; }
+}
+
+/* Forms */
+.form-control {
+  border-radius: 0.375rem;
+  transition: var(--transition);
   
-  .form-control, .form-select {
-      background-color: #2d2d2d;
-      color: #e0e0e0;
-      border-color: #444;
+  &:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(var(--primary-color), 0.25);
   }
 }
 
-/* Animasi tambahan */
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+.invalid-feedback {
+  font-size: 0.85rem;
 }
 
-.pulse-animation {
-  animation: pulse 2s infinite;
-}
-
-/* Responsive table */
-.table-responsive {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-@media (max-width: 768px) {
-  .table-responsive table {
-      display: block;
-      width: 100%;
-  }
+/* Buttons */
+.btn {
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition: var(--transition);
   
-  .table-responsive thead {
-      display: none;
-  }
-  
-  .table-responsive tbody tr {
-      display: block;
-      margin-bottom: 1rem;
-      border: 1px solid var(--bs-border-color);
-      border-radius: var(--border-radius);
-  }
-  
-  .table-responsive tbody td {
-      display: flex;
-      justify-content: space-between;
-      padding: 0.5rem;
-      border: none;
-      border-bottom: 1px solid var(--bs-border-color);
-  }
-  
-  .table-responsive tbody td::before {
-      content: attr(data-label);
-      font-weight: bold;
-      margin-right: 1rem;
+  &-primary {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    
+    &:hover {
+      background: darken(var(--primary-color), 8%);
+      border-color: darken(var(--primary-color), 8%);
+    }
   }
 }
 
-/* Gaya Dasar */
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f8f9fa;
-  color: #333;
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-/* Gaya Pencarian */
-.search-container {
-  position: relative;
-  margin-bottom: 30px;
-}
-
-#searchInput {
-  padding: 12px;
-  border: 2px solid #ddd;
-  border-radius: 4px;
-  transition: all 0.3s;
-}
-
-#searchInput:focus {
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-
-.suggestions-dropdown {
-  position: absolute;
-  width: 100%;
+/* ================ UTILITIES ================ */
+.search-suggestions {
+  z-index: 1000;
   max-height: 300px;
   overflow-y: auto;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 0 0 4px 4px;
-  z-index: 1000;
-  display: none;
+  @extend .shadow;
+  
+  &-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    
+    &:hover {
+      background: var(--light-color);
+    }
+  }
 }
 
-.suggestion-item {
-  padding: 10px;
-  cursor: pointer;
+.loading-overlay {
+  background: rgba(255, 255, 255, 0.9);
+  z-index: 9999;
+  backdrop-filter: blur(3px);
 }
 
-.suggestion-item:hover {
-  background-color: #f1f1f1;
-}
-
-/* Gaya Daftar Buku */
-.book-card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  padding: 15px;
-  margin-bottom: 20px;
-  transition: transform 0.3s;
-}
-
-.book-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-.book-title {
-  font-weight: bold;
-  margin-bottom: 5px;
-  color: #0d6efd;
-}
-
-.book-author {
-  color: #666;
-  font-size: 0.9em;
-}
-
-.book-category {
-  display: inline-block;
-  background: #e9ecef;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 0.8em;
-  margin-top: 5px;
-}
-
-/* Responsif */
-@media (max-width: 768px) {
-  .book-card {
-      margin-bottom: 15px;
+/* ================ MODALS ================ */
+.modal {
+  &-content {
+    border-radius: var(--border-radius);
+    overflow: hidden;
   }
   
-  #searchInput {
-      padding: 10px;
+  &-header {
+    background: var(--primary-color);
+    color: white;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   }
 }
 
-/* Invoice Styles */
-#invoiceModal .modal-header {
-  background-color: var(--primary-color);
-  color: white;
+#invoiceModal {
+  .modal-header {
+    background: var(--primary-color);
+    color: white;
+  }
+  
+  .table-light th {
+    background: var(--primary-light);
+  }
+  
+  .signature-box {
+    border-top: 2px solid var(--dark-color);
+    position: relative;
+    height: 80px;
+    
+    &::after {
+      content: "(Tanda tangan)";
+      position: absolute;
+      bottom: -1.5rem;
+      left: 0;
+      right: 0;
+      font-size: 0.8rem;
+      color: var(--secondary-color);
+    }
+  }
 }
 
-#invoiceModal .table-bordered {
-  border: 1px solid #dee2e6;
-}
-
-#invoiceModal .table-bordered th,
-#invoiceModal .table-bordered td {
-  border: 1px solid #dee2e6;
-}
-
-#invoiceModal .bg-light {
-  background-color: #f8f9fa !important;
+/* ================ RESPONSIVE ================ */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 0.75rem;
+  }
+  
+  .navbar-brand {
+    font-size: 1.1rem;
+  }
+  
+  .table-responsive {
+    border: none;
+    
+    table {
+      min-width: 600px;
+    }
+  }
+  
+  .card {
+    margin-bottom: 1rem;
+    
+    .card-body {
+      padding: 1rem;
+    }
+  }
 }
 
 @media print {
-  body * {
-      visibility: hidden;
+  body {
+    background: white !important;
   }
-  #invoiceModal .modal-content,
-  #invoiceModal .modal-content * {
-      visibility: visible;
+  
+  .modal-content {
+    box-shadow: none;
+    border: none;
   }
-  #invoiceModal .modal-content {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      border: none;
-  }
+  
   .no-print {
-      display: none !important;
+    display: none !important;
+  }
+  
+  .signature-box {
+    border-top: 2px solid black !important;
   }
 }
