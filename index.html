@@ -545,7 +545,9 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span><i class="fas fa-book me-2"></i>Daftar Buku Tersedia</span>
                         <div>
-                            <input type="search" id="searchBuku" class="form-control form-control-sm" placeholder="Cari buku...">
+                            <input type="text" class="form-control" id="judulBuku" placeholder="Cari buku..." 
+       required minlength="3" maxlength="100" 
+       pattern="[A-Za-z0-9 .,'\-]+">
                         </div>
                     </div>
                     <div class="card-body">
