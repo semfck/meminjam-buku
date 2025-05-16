@@ -1,16 +1,19 @@
-import { createClient } from '@supabase/supabase-js';
-
+// ====================== GLOBAL CONSTANTS ======================
+const DENDA_PER_HARI = 5000; // Rp 5,000 per day late
+const ITEMS_PER_PAGE = 10;
 const SUPABASE_URL = 'https://xqnlchcbxekwulncjvfy.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxbmxjaGNieGVrd3VsbmNqdmZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNzcxNzksImV4cCI6MjA2Mjg1MzE3OX0.j8nyrPIp64bJL_WziUE8ceSvwrSU0C8VHTd4-qGl8D4';
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+// ====================== GLOBAL VARIABLES ======================
+let bukuList = [];
+let peminjamanList = [];
+let riwayatList = [];
+let currentInvoice = null;
+let currentPage = 1;
+let reportChart = null;
 
-// Row Level Security policy contoh di Supabase:
-/*
--- Enable RLS untuk tabel peminjaman
-ALTER TABLE peminjaman ENABLE ROW LEVEL SECURITY;
+// Initialize Supabase client
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
--- Policy: Hanya admin atau pemilik data yang bisa melihat
-CREATE POLICY peminjaman_policy ON peminjaman
-    USING (auth.uid() = user_id OR auth.jwt() ->> 'is_admin' = 'true');
-*/
+// Initialize Bootstrap components
+let pengembalianModal, confirmModal, invoiceModal;
