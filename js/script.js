@@ -1,53 +1,8 @@
-// script.js
 // ====================== GLOBAL CONSTANTS ======================
 const DENDA_PER_HARI = 5000; // Rp 5,000 per day late
 const ITEMS_PER_PAGE = 10;
 const SUPABASE_URL = 'https://xqnlchcbxekwulncjvfy.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxbmxjaGNieGVrd3VsbmNqdmZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNzcxNzksImV4cCI6MjA2Mjg1MzE3OX0.j8nyrPIp64bJL_WziUE8ceSvwrSU0C8VHTd4-qGl8D4';
-
-// Data buku dummy minimal 4 buku dari 4 kategori
-const DUMMY_BOOKS = [
-    {
-        id: '1',
-        kode: 'FIK001',
-        judul: 'Laskar Pelangi',
-        pengarang: 'Andrea Hirata',
-        tahun_terbit: '2005',
-        kategori: 'Fiksi',
-        isbn: '978-9793062797',
-        deskripsi: 'Novel tentang persahabatan dan pendidikan di Belitung'
-    },
-    {
-        id: '2',
-        kode: 'NFK001',
-        judul: 'Atomic Habits',
-        pengarang: 'James Clear',
-        tahun_terbit: '2018',
-        kategori: 'Non-Fiksi',
-        isbn: '978-0735211292',
-        deskripsi: 'Buku tentang membangun kebiasaan baik dan menghilangkan kebiasaan buruk'
-    },
-    {
-        id: '3',
-        kode: 'TEK001',
-        judul: 'Clean Code',
-        pengarang: 'Robert C. Martin',
-        tahun_terbit: '2008',
-        kategori: 'Teknologi',
-        isbn: '978-0132350884',
-        deskripsi: 'Panduan menulis kode yang bersih dan mudah dipahami'
-    },
-    {
-        id: '4',
-        kode: 'SEJ001',
-        judul: 'Sejarah Indonesia Modern',
-        pengarang: 'M.C. Ricklefs',
-        tahun_terbit: '1981',
-        kategori: 'Sejarah',
-        isbn: '978-9794211875',
-        deskripsi: 'Sejarah perkembangan Indonesia dari masa kolonial hingga modern'
-    }
-];
 
 // ====================== GLOBAL VARIABLES ======================
 let bukuList = [];
@@ -58,91 +13,70 @@ let currentPage = 1;
 let reportChart = null;
 
 // Initialize Supabase client
-const _supabase = supabase;
+const _supabase = window.supabase;
 const supabase = _supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Initialize Bootstrap components
-let pengembalianModal, confirmModal, invoiceModal, bookDetailModal;
+let pengembalianModal, confirmModal, invoiceModal;
 
-// ====================== INITIALIZATION ======================
-document.addEventListener('DOMContentLoaded', async function() {
-    try {
-        // Initialize modals after DOM is loaded
-        pengembalianModal = new bootstrap.Modal(document.getElementById('pengembalianModal'));
-        confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-        invoiceModal = new bootstrap.Modal(document.getElementById('invoiceModal'));
-        bookDetailModal = new bootstrap.Modal(document.getElementById('bookDetailModal'));
+// ====================== HELPER FUNCTIONS ======================
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    const options = { day: '2-digit', month: 'long', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('id-ID', options);
+}
 
-        // Set default dates
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('tanggalPinjam').value = today;
-        document.getElementById('modalTanggalKembali').value = today;
-        document.getElementById('filterDari').value = getFirstDayOfMonth();
-        document.getElementById('filterSampai').value = today;
-        
-        // Event listeners for due date calculation
-        document.getElementById('lamaPinjam').addEventListener('change', hitungJatuhTempo);
-        document.getElementById('tanggalPinjam').addEventListener('change', hitungJatuhTempo);
-        
-        // Character counter for notes
-        document.getElementById('catatan').addEventListener('input', function() {
-            document.getElementById('charCount').textContent = this.value.length;
-        });
-        
-        // Setup other event listeners
-        setupEventListeners();
-        
-        // Load initial data
-        await Promise.all([
-            loadBuku(),
-            loadPeminjaman(),
-            loadRiwayat()
-        ]);
-        
-        // Show welcome message
-        showAlert('info', 'Selamat datang di Sistem Peminjaman Buku Perpustakaan');
-    } catch (error) {
-        console.error("Initialization error:", error);
-        showAlert('error', 'Gagal memuat aplikasi: ' + error.message);
-    }
-});
+function formatRupiah(amount) {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0
+    }).format(amount || 0);
+}
 
-// ====================== MAIN FUNCTIONS ======================
-function setupEventListeners() {
-    // Form submission
-    document.getElementById('formPeminjaman').addEventListener('submit', function(e) {
-        e.preventDefault();
-        simpanPeminjaman();
-    });
-    
-    // Reset form
-    document.getElementById('btnReset').addEventListener('click', resetForm);
+function getFirstDayOfMonth() {
+    const date = new Date();
+    return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+}
 
-    // Book search
-    document.getElementById('judulBuku').addEventListener('input', debounce(searchBukuSuggestions, 300));
-    document.getElementById('searchBuku').addEventListener('input', debounce(searchBuku, 300));
+function debounce(func, timeout = 300) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => func.apply(this, args), timeout);
+    };
+}
 
-    // Return functions
-    document.getElementById('searchPeminjaman').addEventListener('input', debounce(searchPeminjaman, 300));
-    document.getElementById('modalTanggalKembali').addEventListener('change', previewDenda);
-    document.getElementById('btnProsesPengembalian').addEventListener('click', prosesPengembalian);
-    document.getElementById('btnConfirmPayment').addEventListener('click', confirmPayment);
+function showLoading(message = 'Memproses...') {
+    document.getElementById('loadingText').textContent = message;
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
 
-    // History functions
-    document.getElementById('searchRiwayat').addEventListener('input', debounce(searchRiwayat, 300));
-    document.getElementById('btnFilter').addEventListener('click', () => loadRiwayat());
-    document.getElementById('btnPrev').addEventListener('click', prevPage);
-    document.getElementById('btnNext').addEventListener('click', nextPage);
-    
-    // Date validation
-    document.getElementById('tanggalPinjam').addEventListener('change', function() {
-        const today = new Date().toISOString().split('T')[0];
-        if (this.value < today) {
-            this.setCustomValidity('Tanggal pinjam tidak boleh sebelum hari ini');
-        } else {
-            this.setCustomValidity('');
-        }
-    });
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function showAlert(type, message) {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} animate__animated animate__fadeInRight`;
+    alert.role = 'alert';
+    alert.innerHTML = `
+        <i class="fas fa-${type === 'error' ? 'times-circle' : type === 'info' ? 'info-circle' : 'check-circle'} me-2"></i>
+        ${message}
+    `;
+    document.getElementById('alertContainer').appendChild(alert);
+    setTimeout(() => alert.remove(), 5000);
+}
+
+function resetForm() {
+    document.getElementById('formPeminjaman').reset();
+    document.getElementById('formPeminjaman').classList.remove('was-validated');
+    document.getElementById('bookId').value = '';
+    document.getElementById('jatuhTempo').value = '';
+    document.getElementById('charCount').textContent = '0/200';
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('tanggalPinjam').value = today;
+    document.getElementById('bookSuggestions').style.display = 'none';
 }
 
 // ====================== BOOK FUNCTIONS ======================
@@ -150,75 +84,42 @@ async function loadBuku() {
     showLoading('Memuat data buku...');
     
     try {
-        // Coba ambil dari local storage dulu
-        const cachedBooks = getFromLocalStorage('bukuList');
-        if (cachedBooks && cachedBooks.length > 0) {
-            bukuList = cachedBooks;
-            updateTabelBuku();
-        }
-        
-        // Kemudian coba update dari server
         const { data, error } = await supabase
             .from('buku')
             .select('*')
             .order('judul', { ascending: true });
 
-        if (!error && data && data.length > 0) {
-            bukuList = data;
-            saveToLocalStorage('bukuList', data);
-            updateTabelBuku();
-        } else if (!cachedBooks) {
-            // Jika tidak ada data dari server dan tidak ada cache, gunakan data dummy
-            bukuList = DUMMY_BOOKS;
-            saveToLocalStorage('bukuList', DUMMY_BOOKS);
-            updateTabelBuku();
-            showAlert('warning', 'Menggunakan data dummy karena koneksi database bermasalah');
-        }
+        if (error) throw error;
+
+        bukuList = data || [];
+        updateTabelBuku();
     } catch (error) {
         console.error("Error loading buku:", error);
-        if (!getFromLocalStorage('bukuList')) {
-            bukuList = DUMMY_BOOKS;
-            saveToLocalStorage('bukuList', DUMMY_BOOKS);
-            updateTabelBuku();
-            showAlert('error', 'Gagal memuat data buku. Menggunakan data dummy.');
-        }
+        showAlert('error', 'Gagal memuat data buku: ' + error.message);
     } finally {
         hideLoading();
     }
 }
 
 function searchBukuSuggestions() {
-    const searchTerm = document.getElementById('judulBuku').value.trim().toLowerCase();
+    const searchTerm = document.getElementById('judulBuku').value.toLowerCase();
+    const suggestions = bukuList.filter(book => 
+        book.judul.toLowerCase().includes(searchTerm)
+    );
+    
     const suggestionsDiv = document.getElementById('bookSuggestions');
-    
-    // Kosongkan suggestions jika pencarian kosong
-    if (searchTerm.length < 2) {
-        suggestionsDiv.style.display = 'none';
-        return;
-    }
-    
-    // Gunakan Fuse.js untuk fuzzy search yang lebih baik
-    const options = {
-        keys: ['judul', 'pengarang', 'kategori'],
-        threshold: 0.4,
-        includeScore: true
-    };
-    
-    const fuse = new Fuse(bukuList, options);
-    const results = fuse.search(searchTerm).slice(0, 5);
-    
     suggestionsDiv.innerHTML = '';
     
-    if (results.length === 0) {
+    if (searchTerm.length < 3 || suggestions.length === 0) {
         suggestionsDiv.style.display = 'none';
         return;
     }
     
-    results.forEach(result => {
+    suggestions.slice(0, 5).forEach(book => {
         const div = document.createElement('div');
         div.className = 'search-suggestion-item';
-        div.textContent = result.item.judul;
-        div.addEventListener('click', () => selectBook(result.item.id));
+        div.textContent = book.judul;
+        div.addEventListener('click', () => selectBook(book.id));
         suggestionsDiv.appendChild(div);
     });
     
@@ -227,6 +128,11 @@ function searchBukuSuggestions() {
 
 function searchBuku() {
     const searchTerm = document.getElementById('searchBuku').value.toLowerCase();
+    if (searchTerm.length < 3) {
+        updateTabelBuku();
+        return;
+    }
+
     const filteredBooks = bukuList.filter(book => 
         book.judul.toLowerCase().includes(searchTerm) ||
         book.pengarang.toLowerCase().includes(searchTerm) ||
@@ -266,12 +172,9 @@ function updateTabelBuku(filteredBooks = null) {
             <td>${book.tahun_terbit}</td>
             <td>${book.kategori}</td>
             <td><span class="status-available">Tersedia</span></td>
-            <td class="d-flex">
-                <button class="btn btn-primary btn-sm me-2" onclick="selectBook('${book.id}')">
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="selectBook('${book.id}')">
                     <i class="fas fa-hand-holding me-1"></i>Pinjam
-                </button>
-                <button class="btn btn-info btn-sm" onclick="showBookDetail('${book.id}')">
-                    <i class="fas fa-info-circle me-1"></i>Detail
                 </button>
             </td>
         `;
@@ -292,20 +195,6 @@ function selectBook(bookId) {
 
     // Close suggestions if open
     document.getElementById('bookSuggestions').style.display = 'none';
-}
-
-function showBookDetail(bookId) {
-    const book = bukuList.find(b => b.id === bookId);
-    if (!book) return;
-
-    document.getElementById('detailJudul').textContent = book.judul;
-    document.getElementById('detailPengarang').textContent = book.pengarang;
-    document.getElementById('detailTahun').textContent = book.tahun_terbit;
-    document.getElementById('detailKategori').textContent = book.kategori;
-    document.getElementById('detailISBN').textContent = book.isbn || '-';
-    document.getElementById('detailDeskripsi').textContent = book.deskripsi || 'Tidak ada deskripsi';
-    
-    bookDetailModal.show();
 }
 
 // ====================== LOAN FUNCTIONS ======================
@@ -379,9 +268,23 @@ function searchPeminjaman() {
 }
 
 async function simpanPeminjaman() {
-    if (!validatePeminjamanForm()) return;
+    const form = document.getElementById('formPeminjaman');
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        // Scroll to first invalid field
+        const invalidElements = form.querySelectorAll(':invalid');
+        if (invalidElements.length > 0) {
+            invalidElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+    }
 
     const bookId = document.getElementById('bookId').value;
+    if (!bookId) {
+        showAlert('error', 'Harap pilih buku terlebih dahulu');
+        return;
+    }
+
     const book = bukuList.find(b => b.id === bookId);
     if (!book) {
         showAlert('error', 'Buku tidak ditemukan');
@@ -403,33 +306,19 @@ async function simpanPeminjaman() {
 
     showLoading('Menyimpan peminjaman...');
     try {
-        // Simpan ke Supabase jika tersedia
-        let savedData = null;
-        try {
-            const { data, error } = await supabase
-                .from('peminjaman')
-                .insert([loanData])
-                .select();
+        const { data, error } = await supabase
+            .from('peminjaman')
+            .insert([loanData])
+            .select();
 
-            if (error) throw error;
-            savedData = data && data.length > 0 ? data[0] : null;
-        } catch (dbError) {
-            console.warn("Gagal menyimpan ke database:", dbError);
-            // Simpan ke local storage sebagai fallback
-            loanData.id = Date.now().toString();
-            loanData.created_at = new Date().toISOString();
-            peminjamanList.unshift(loanData);
-            saveToLocalStorage('peminjamanList', peminjamanList);
-            savedData = loanData;
-            showAlert('warning', 'Data disimpan secara lokal karena koneksi bermasalah');
-        }
+        if (error) throw error;
 
         showAlert('success', 'Peminjaman berhasil disimpan!');
         
         // Show invoice after successful submission
-        if (savedData) {
+        if (data && data.length > 0) {
             setTimeout(() => {
-                showInvoice(savedData);
+                showInvoice(data[0]);
             }, 500);
         }
         
@@ -442,50 +331,6 @@ async function simpanPeminjaman() {
     } finally {
         hideLoading();
     }
-}
-
-function validatePeminjamanForm() {
-    const form = document.getElementById('formPeminjaman');
-    const bookId = document.getElementById('bookId').value;
-    const namaPeminjam = document.getElementById('namaPeminjam').value.trim();
-    const noHp = document.getElementById('noHp').value.trim();
-    const tanggalPinjam = document.getElementById('tanggalPinjam').value;
-    const lamaPinjam = document.getElementById('lamaPinjam').value;
-    
-    // Validasi buku
-    if (!bookId) {
-        showAlert('error', 'Harap pilih buku terlebih dahulu');
-        document.getElementById('judulBuku').focus();
-        return false;
-    }
-    
-    // Validasi nama peminjam
-    if (namaPeminjam.length < 3 || !/^[a-zA-Z ]+$/.test(namaPeminjam)) {
-        showAlert('error', 'Nama hanya boleh mengandung huruf dan spasi (minimal 3 karakter)');
-        document.getElementById('namaPeminjam').focus();
-        return false;
-    }
-    
-    // Validasi nomor HP
-    if (!/^08[0-9]{8,11}$/.test(noHp)) {
-        showAlert('error', 'Format nomor HP tidak valid (contoh: 081234567890)');
-        document.getElementById('noHp').focus();
-        return false;
-    }
-    
-    // Validasi tanggal
-    if (!tanggalPinjam) {
-        showAlert('error', 'Harap pilih tanggal pinjam');
-        return false;
-    }
-    
-    // Validasi lama pinjam
-    if (!lamaPinjam) {
-        showAlert('error', 'Harap pilih lama pinjam');
-        return false;
-    }
-    
-    return true;
 }
 
 function hitungJatuhTempo() {
@@ -509,7 +354,7 @@ function hitungJatuhTempo() {
 }
 
 // ====================== RETURN FUNCTIONS ======================
-async function showPengembalianModal(loanId) {
+function showPengembalianModal(loanId) {
     currentInvoice = peminjamanList.find(loan => loan.id === loanId);
     if (!currentInvoice) return;
 
@@ -549,43 +394,40 @@ async function prosesPengembalian() {
         return;
     }
 
+    // Validasi tambahan
+    const returnDate = new Date(returnDateInput.value);
+    const borrowDate = new Date(currentInvoice.tanggal_pinjam);
+    if (returnDate < borrowDate) {
+        showAlert('error', 'Tanggal kembali tidak boleh lebih awal dari tanggal pinjam');
+        return;
+    }
+
     showLoading('Memproses pengembalian...');
     try {
-        const returnDate = returnDateInput.value;
         const dueDate = new Date(currentInvoice.jatuh_tempo);
-        const diffDays = Math.ceil((new Date(returnDate) - dueDate) / (1000 * 60 * 60 * 24));
+        const diffDays = Math.ceil((returnDate - dueDate) / (1000 * 60 * 60 * 24));
         
         const updateData = {
-            tanggal_kembali: returnDate,
+            tanggal_kembali: returnDateInput.value,
             hari_telat: diffDays > 0 ? diffDays : 0,
             denda: diffDays > 0 ? diffDays * DENDA_PER_HARI : 0,
             status: diffDays > 0 ? 'Terlambat' : 'Dikembalikan'
         };
 
-        // Coba update ke database
-        try {
-            const { data, error } = await supabase
-                .from('peminjaman')
-                .update(updateData)
-                .eq('id', currentInvoice.id)
-                .select();
+        const { data, error } = await supabase
+            .from('peminjaman')
+            .update(updateData)
+            .eq('id', currentInvoice.id)
+            .select();
 
-            if (error) throw error;
-            currentInvoice = data && data.length > 0 ? data[0] : null;
-        } catch (dbError) {
-            console.warn("Gagal update database:", dbError);
-            // Update lokal sebagai fallback
-            Object.assign(currentInvoice, updateData);
-            saveToLocalStorage('peminjamanList', peminjamanList);
-            showAlert('warning', 'Data diupdate secara lokal karena koneksi bermasalah');
-        }
+        if (error) throw error;
 
         pengembalianModal.hide();
         
         // Show invoice if there's a late fee
-        if (currentInvoice && updateData.denda > 0) {
+        if (data && data.length > 0 && updateData.denda > 0) {
             setTimeout(() => {
-                showInvoice(currentInvoice, true);
+                showInvoice(data[0], true);
             }, 500);
         } else {
             showAlert('success', 'Pengembalian berhasil diproses!');
@@ -601,43 +443,147 @@ async function prosesPengembalian() {
     }
 }
 
+// ====================== INVOICE FUNCTIONS ======================
+function showInvoice(loanData, isLateReturn = false) {
+    // Generate invoice number (INV-YYYYMM-XXXX)
+    const now = new Date();
+    const invoiceNumber = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}-${String(loanData.id).padStart(4, '0')}`;
+    
+    // Fill in invoice data
+    document.getElementById('invoiceNumber').textContent = invoiceNumber;
+    document.getElementById('invoiceNamaPeminjam').textContent = loanData.nama_peminjam || '-';
+    document.getElementById('invoiceNoHp').textContent = loanData.no_hp || '-';
+    document.getElementById('invoiceTanggalPinjam').textContent = formatDate(loanData.tanggal_pinjam);
+    document.getElementById('invoiceJatuhTempo').textContent = formatDate(loanData.jatuh_tempo);
+    
+    // Fill book details
+    const bookDetails = document.getElementById('invoiceBookDetails');
+    bookDetails.innerHTML = `
+        <tr>
+            <td>${loanData.judul_buku || '-'}</td>
+            <td>${loanData.pengarang || '-'}</td>
+            <td>${loanData.lama_pinjam ? loanData.lama_pinjam + ' minggu' : '-'}</td>
+            <td>
+                <span class="badge ${loanData.status === 'Terlambat' ? 'bg-danger' : 'bg-success'}">
+                    ${loanData.status || 'Dipinjam'}
+                </span>
+            </td>
+        </tr>
+    `;
+    
+    // Handle late return section
+    const dendaSection = document.getElementById('dendaSection');
+    if (isLateReturn && loanData.denda > 0) {
+        dendaSection.classList.remove('d-none');
+        document.getElementById('invoiceTanggalKembali').textContent = formatDate(loanData.tanggal_kembali);
+        document.getElementById('invoiceHariTelat').textContent = loanData.hari_telat || 0;
+        document.getElementById('invoiceDenda').textContent = formatRupiah(loanData.denda);
+    } else {
+        dendaSection.classList.add('d-none');
+    }
+    
+    // Initialize and show modal
+    invoiceModal.show();
+    
+    // Set up print button
+    document.getElementById('btnCetakInvoice').onclick = function() {
+        // Clone the modal content
+        const printContent = document.getElementById('invoiceModal').cloneNode(true);
+        
+        // Remove elements with no-print class
+        const noPrintElements = printContent.querySelectorAll('.no-print');
+        noPrintElements.forEach(el => el.remove());
+        
+        // Create print window
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Cetak Invoice Peminjaman Buku</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                <style>
+                    body {
+                        padding: 20px;
+                        font-size: 14px;
+                    }
+                    .table {
+                        font-size: 13px;
+                    }
+                    .table th {
+                        background-color: #f8f9fa !important;
+                    }
+                    .badge {
+                        font-size: 12px;
+                    }
+                    .signature-box {
+                        height: 80px;
+                        margin-top: 40px;
+                        position: relative;
+                    }
+                    .signature-line {
+                        position: absolute;
+                        bottom: 0;
+                        width: 100%;
+                        border-top: 1px solid #000;
+                    }
+                    @page {
+                        size: A4;
+                        margin: 10mm;
+                    }
+                    @media print {
+                        body {
+                            padding: 0;
+                            font-size: 12px;
+                        }
+                        .table {
+                            font-size: 11px;
+                        }
+                        .modal-header {
+                            background-color: #4361ee !important;
+                            color: white !important;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+                    }
+                </style>
+            </head>
+            <body onload="window.print();">
+                ${printContent.querySelector('.modal-content').outerHTML}
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
+}
+
 // ====================== HISTORY FUNCTIONS ======================
 async function loadRiwayat() {
     showLoading('Memuat riwayat...');
     try {
-        // Coba ambil dari database
-        try {
-            let query = supabase
-                .from('peminjaman')
-                .select('*', { count: 'exact' })
-                .order('tanggal_pinjam', { ascending: false });
+        let query = supabase
+            .from('peminjaman')
+            .select('*', { count: 'exact' })
+            .order('tanggal_pinjam', { ascending: false });
 
-            // Filter tanggal
-            const dari = document.getElementById('filterDari').value;
-            const sampai = document.getElementById('filterSampai').value;
-            if (dari && sampai) {
-                query = query.gte('tanggal_pinjam', dari).lte('tanggal_pinjam', sampai);
-            }
-
-            // Pencarian
-            const searchTerm = document.getElementById('searchRiwayat').value.toLowerCase();
-            if (searchTerm) {
-                query = query.or(`nama_peminjam.ilike.%${searchTerm}%,judul_buku.ilike.%${searchTerm}%`);
-            }
-
-            const { data, error, count } = await query;
-            if (error) throw error;
-
-            riwayatList = data || [];
-            document.getElementById('totalData').textContent = count || 0;
-        } catch (dbError) {
-            console.warn("Gagal memuat dari database:", dbError);
-            // Gunakan data lokal sebagai fallback
-            riwayatList = peminjamanList.filter(loan => loan.tanggal_kembali);
-            document.getElementById('totalData').textContent = riwayatList.length;
-            showAlert('warning', 'Menggunakan data lokal karena koneksi bermasalah');
+        // Filter tanggal
+        const dari = document.getElementById('filterDari').value;
+        const sampai = document.getElementById('filterSampai').value;
+        if (dari && sampai) {
+            query = query.gte('tanggal_pinjam', dari).lte('tanggal_pinjam', sampai);
         }
 
+        // Pencarian
+        const searchTerm = document.getElementById('searchRiwayat').value.toLowerCase();
+        if (searchTerm) {
+            query = query.or(`nama_peminjam.ilike.%${searchTerm}%,judul_buku.ilike.%${searchTerm}%`);
+        }
+
+        const { data, error, count } = await query;
+        if (error) throw error;
+
+        riwayatList = data || [];
+        document.getElementById('totalData').textContent = count || 0;
         updateRiwayatTable();
         updatePagination();
     } catch (error) {
@@ -723,85 +669,79 @@ function nextPage() {
     }
 }
 
-// ====================== HELPER FUNCTIONS ======================
-function formatDate(dateString) {
-    if (!dateString) return '-';
-    const options = { day: '2-digit', month: 'long', year: 'numeric' };
-    return new Date(dateString).toLocaleDateString('id-ID', options);
-}
-
-function formatRupiah(amount) {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0
-    }).format(amount || 0);
-}
-
-function getFirstDayOfMonth() {
-    const date = new Date();
-    return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
-}
-
-function debounce(func, timeout = 300) {
-    let timer;
-    return (...args) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => func.apply(this, args), timeout);
-    };
-}
-
-function resetForm() {
-    document.getElementById('formPeminjaman').reset();
-    document.getElementById('formPeminjaman').classList.remove('was-validated');
-    document.getElementById('bookId').value = '';
-    document.getElementById('jatuhTempo').value = '';
-    document.getElementById('charCount').textContent = '0/200';
+// ====================== INITIALIZATION ======================
+document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize modals
+    pengembalianModal = new bootstrap.Modal(document.getElementById('pengembalianModal'));
+    confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    invoiceModal = new bootstrap.Modal(document.getElementById('invoiceModal'));
+    
+    // Set today as default date
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('tanggalPinjam').value = today;
-    document.getElementById('bookSuggestions').style.display = 'none';
-}
+    document.getElementById('modalTanggalKembali').value = today;
+    
+    // Set first day of month as default filter
+    document.getElementById('filterDari').value = getFirstDayOfMonth();
+    document.getElementById('filterSampai').value = today;
+    
+    // Load initial data
+    await Promise.all([loadBuku(), loadPeminjaman(), loadRiwayat()]);
+    
+    // Setup event listeners
+    setupEventListeners();
+});
 
-function showLoading(message = 'Memproses...') {
-    document.getElementById('loadingText').textContent = message;
-    document.getElementById('loadingOverlay').style.display = 'flex';
-}
-
-function hideLoading() {
-    document.getElementById('loadingOverlay').style.display = 'none';
-}
-
-function showAlert(type, message) {
-    const alert = document.createElement('div');
-    alert.className = `alert alert-${type} animate__animated animate__fadeInRight`;
-    alert.role = 'alert';
-    alert.innerHTML = `
-        <i class="fas fa-${type === 'error' ? 'times-circle' : type === 'info' ? 'info-circle' : 'check-circle'} me-2"></i>
-        ${message}
-    `;
-    document.getElementById('alertContainer').appendChild(alert);
-    setTimeout(() => alert.remove(), 5000);
-}
-
-function saveToLocalStorage(key, data) {
-    try {
-        localStorage.setItem(key, JSON.stringify(data));
-    } catch (e) {
-        console.error('Error saving to localStorage', e);
-    }
-}
-
-function getFromLocalStorage(key) {
-    try {
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : null;
-    } catch (e) {
-        console.error('Error reading from localStorage', e);
-        return null;
-    }
+function setupEventListeners() {
+    // Peminjaman form
+    document.getElementById('formPeminjaman').addEventListener('submit', function(e) {
+        e.preventDefault();
+        simpanPeminjaman();
+    });
+    
+    document.getElementById('btnReset').addEventListener('click', resetForm);
+    
+    // Book search
+    document.getElementById('judulBuku').addEventListener('input', debounce(searchBukuSuggestions, 300));
+    document.getElementById('searchBuku').addEventListener('input', debounce(searchBuku, 300));
+    
+    // Date calculations
+    document.getElementById('tanggalPinjam').addEventListener('change', hitungJatuhTempo);
+    document.getElementById('lamaPinjam').addEventListener('change', hitungJatuhTempo);
+    
+    // Character counter
+    document.getElementById('catatan').addEventListener('input', function() {
+        document.getElementById('charCount').textContent = this.value.length + '/200';
+    });
+    
+    // Pengembalian
+    document.getElementById('modalTanggalKembali').addEventListener('change', function() {
+        validateReturnDate();
+        previewDenda();
+    });
+    
+    document.getElementById('btnProsesPengembalian').addEventListener('click', prosesPengembalian);
+    
+    // Riwayat
+    document.getElementById('searchPeminjaman').addEventListener('input', debounce(searchPeminjaman, 300));
+    document.getElementById('searchRiwayat').addEventListener('input', debounce(searchRiwayat, 300));
+    document.getElementById('btnFilter').addEventListener('click', loadRiwayat);
+    document.getElementById('btnPrev').addEventListener('click', prevPage);
+    document.getElementById('btnNext').addEventListener('click', nextPage);
+    
+    // Invoice
+    document.getElementById('btnCetakInvoice').addEventListener('click', function() {
+        window.print();
+    });
+    
+    // Close suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.search-container')) {
+            document.getElementById('bookSuggestions').style.display = 'none';
+        }
+    });
 }
 
 // Make functions available globally for HTML event handlers
 window.selectBook = selectBook;
 window.showPengembalianModal = showPengembalianModal;
-window.showBookDetail = showBookDetail;
