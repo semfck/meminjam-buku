@@ -88,6 +88,89 @@ function resetForm() {
     document.getElementById('bookSuggestions').style.display = 'none';
 }
 
+// Fungsi untuk memilih buku dari tabel
+function selectBookFromTable(bookData) {
+    document.getElementById('bookId').value = bookData.id || 'demo-' + Math.random().toString(36).substr(2, 9);
+    document.getElementById('judulBuku').value = bookData.judul;
+    document.getElementById('pengarang').value = bookData.pengarang;
+    document.getElementById('tahunTerbit').value = bookData.tahun;
+    document.getElementById('kategori').value = bookData.kategori;
+    document.getElementById('isbn').value = bookData.isbn || 'ISBN-' + Math.random().toString(36).substr(2, 8).toUpperCase();
+    
+    showAlert('success', `Buku "${bookData.judul}" telah dipilih`);
+    document.getElementById('formPeminjaman').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Data buku contoh
+const sampleBooks = {
+    fiksi: [
+        { id: 'fiksi-1', judul: 'Laskar Pelangi', pengarang: 'Andrea Hirata', tahun: 2005, kategori: 'Fiksi', isbn: '978-979-3062-79-8' },
+        { id: 'fiksi-2', judul: 'Bumi Manusia', pengarang: 'Pramoedya Ananta Toer', tahun: 1980, kategori: 'Fiksi', isbn: '979-9234-01-5' },
+        { id: 'fiksi-3', judul: 'Perahu Kertas', pengarang: 'Dee Lestari', tahun: 2009, kategori: 'Fiksi', isbn: '978-979-22-3895-7' },
+        { id: 'fiksi-4', judul: 'Pulang', pengarang: 'Leila S. Chudori', tahun: 2012, kategori: 'Fiksi', isbn: '978-979-780-635-3' }
+    ],
+    nonfiksi: [
+        { id: 'nonfiksi-1', judul: 'Filosofi Teras', pengarang: 'Henry Manampiring', tahun: 2018, kategori: 'Non-Fiksi', isbn: '978-602-424-698-5' },
+        { id: 'nonfiksi-2', judul: 'Atomic Habits', pengarang: 'James Clear', tahun: 2018, kategori: 'Non-Fiksi', isbn: '978-073-521-129-2' },
+        { id: 'nonfiksi-3', judul: 'The Psychology of Money', pengarang: 'Morgan Housel', tahun: 2020, kategori: 'Non-Fiksi', isbn: '978-085-719-768-9' },
+        { id: 'nonfiksi-4', judul: 'Mindset: The New Psychology of Success', pengarang: 'Carol S. Dweck', tahun: 2006, kategori: 'Non-Fiksi', isbn: '978-034-547-232-8' }
+    ],
+    teknologi: [
+        { id: 'teknologi-1', judul: 'Clean Code', pengarang: 'Robert C. Martin', tahun: 2008, kategori: 'Teknologi', isbn: '978-013-235-088-4' },
+        { id: 'teknologi-2', judul: 'The Pragmatic Programmer', pengarang: 'Andrew Hunt, David Thomas', tahun: 1999, kategori: 'Teknologi', isbn: '978-020-161-622-4' },
+        { id: 'teknologi-3', judul: 'Designing Data-Intensive Applications', pengarang: 'Martin Kleppmann', tahun: 2017, kategori: 'Teknologi', isbn: '978-144-937-332-0' },
+        { id: 'teknologi-4', judul: 'Artificial Intelligence: A Modern Approach', pengarang: 'Stuart Russell, Peter Norvig', tahun: 2020, kategori: 'Teknologi', isbn: '978-013-461-099-3' }
+    ],
+    sejarah: [
+        { id: 'sejarah-1', judul: 'Sejarah Indonesia Modern', pengarang: 'M.C. Ricklefs', tahun: 1981, kategori: 'Sejarah', isbn: '978-979-421-659-5' },
+        { id: 'sejarah-2', judul: 'Revolusi Indonesia', pengarang: 'George McTurnan Kahin', tahun: 1952, kategori: 'Sejarah', isbn: '978-979-461-554-5' },
+        { id: 'sejarah-3', judul: 'Sapiens: A Brief History of Humankind', pengarang: 'Yuval Noah Harari', tahun: 2011, kategori: 'Sejarah', isbn: '978-006-231-609-7' },
+        { id: 'sejarah-4', judul: 'Guns, Germs, and Steel', pengarang: 'Jared Diamond', tahun: 1997, kategori: 'Sejarah', isbn: '978-039-331-755-8' }
+    ]
+};
+
+// Fungsi untuk memuat tabel buku
+function loadBookTables() {
+    const categories = ['fiksi', 'nonfiksi', 'teknologi', 'sejarah'];
+    
+    categories.forEach(category => {
+        const tbody = document.getElementById(`${category}-table-body`);
+        if (!tbody) return;
+        
+        tbody.innerHTML = sampleBooks[category].map(book => `
+            <tr>
+                <td>${book.judul}</td>
+                <td>${book.pengarang}</td>
+                <td>${book.tahun}</td>
+                <td><span class="status-available">Tersedia</span></td>
+                <td>
+                    <button class="btn btn-primary btn-sm" onclick="selectBookFromTable(${JSON.stringify(book).replace(/"/g, '&quot;')})">
+                        <i class="fas fa-hand-holding me-1"></i>Pinjam
+                    </button>
+                    <button class="btn btn-info btn-sm" onclick="showBookDetail(${JSON.stringify(book).replace(/"/g, '&quot;')})">
+                        <i class="fas fa-info-circle me-1"></i>Detail
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    });
+}
+
+// Fungsi untuk menampilkan detail buku
+function showBookDetail(book) {
+    const modal = new bootstrap.Modal(document.getElementById('bookDetailModal'));
+    document.getElementById('detailJudul').textContent = book.judul;
+    document.getElementById('detailPengarang').textContent = book.pengarang;
+    document.getElementById('detailTahun').textContent = book.tahun;
+    document.getElementById('detailKategori').textContent = book.kategori;
+    document.getElementById('detailISBN').textContent = book.isbn;
+    document.getElementById('detailDeskripsi').textContent = `Buku ${book.kategori} karya ${book.pengarang} yang diterbitkan tahun ${book.tahun}.`;
+    modal.show();
+}
+
+// Panggil fungsi saat DOM siap
+document.addEventListener('DOMContentLoaded', loadBookTables);
+
 // ====================== BOOK FUNCTIONS ======================
 async function loadBuku() {
     showLoading('Memuat data buku...');

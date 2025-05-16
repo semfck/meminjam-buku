@@ -527,42 +527,216 @@
                 </div>
                 
                 <!-- Daftar Buku Tersedia -->
-                <div class="card mt-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-book me-2"></i>Daftar Buku Tersedia</span>
-                        <div>
-                            <input type="text" class="form-control" id="searchBuku" placeholder="Cari buku..." 
-                                   minlength="3" maxlength="100" 
-                                   pattern="[A-Za-z0-9 .,'\-]+">
+<div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-book me-2"></i>Daftar Buku Tersedia</span>
+        <div class="input-group" style="width: 300px;">
+            <input type="text" class="form-control" id="globalBookSearch" placeholder="Cari buku...">
+            <button class="btn btn-outline-secondary" type="button" id="btnSearchBook">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <ul class="nav nav-tabs mb-4" id="bookCategoryTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="fiksi-tab" data-bs-toggle="tab" data-bs-target="#fiksi" type="button" role="tab">
+                    <i class="fas fa-book-open me-1"></i>Fiksi
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="nonfiksi-tab" data-bs-toggle="tab" data-bs-target="#nonfiksi" type="button" role="tab">
+                    <i class="fas fa-scroll me-1"></i>Non-Fiksi
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="teknologi-tab" data-bs-toggle="tab" data-bs-target="#teknologi" type="button" role="tab">
+                    <i class="fas fa-laptop-code me-1"></i>Teknologi
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="sejarah-tab" data-bs-toggle="tab" data-bs-target="#sejarah" type="button" role="tab">
+                    <i class="fas fa-landmark me-1"></i>Sejarah
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="bookCategoryContent">
+            <!-- Tab Fiksi -->
+            <div class="tab-pane fade show active" id="fiksi" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="30%">Judul</th>
+                                <th width="25%">Pengarang</th>
+                                <th width="10%">Tahun</th>
+                                <th width="15%">Status</th>
+                                <th width="20%">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fiksi-table-body">
+                            <!-- Data akan diisi oleh JavaScript -->
+                            <tr>
+                                <td colspan="5" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Memuat...</span>
+                                    </div>
+                                    <p class="mt-2">Memuat data buku...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Tab Non-Fiksi -->
+            <div class="tab-pane fade" id="nonfiksi" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="30%">Judul</th>
+                                <th width="25%">Pengarang</th>
+                                <th width="10%">Tahun</th>
+                                <th width="15%">Status</th>
+                                <th width="20%">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="nonfiksi-table-body">
+                            <!-- Data akan diisi oleh JavaScript -->
+                            <tr>
+                                <td colspan="5" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Memuat...</span>
+                                    </div>
+                                    <p class="mt-2">Memuat data buku...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Tab Teknologi -->
+            <div class="tab-pane fade" id="teknologi" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="30%">Judul</th>
+                                <th width="25%">Pengarang</th>
+                                <th width="10%">Tahun</th>
+                                <th width="15%">Status</th>
+                                <th width="20%">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teknologi-table-body">
+                            <!-- Data akan diisi oleh JavaScript -->
+                            <tr>
+                                <td colspan="5" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Memuat...</span>
+                                    </div>
+                                    <p class="mt-2">Memuat data buku...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Tab Sejarah -->
+            <div class="tab-pane fade" id="sejarah" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="30%">Judul</th>
+                                <th width="25%">Pengarang</th>
+                                <th width="10%">Tahun</th>
+                                <th width="15%">Status</th>
+                                <th width="20%">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sejarah-table-body">
+                            <!-- Data akan diisi oleh JavaScript -->
+                            <tr>
+                                <td colspan="5" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Memuat...</span>
+                                    </div>
+                                    <p class="mt-2">Memuat data buku...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detail Buku -->
+<div class="modal fade" id="bookDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Detail Buku</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4 text-center mb-3">
+                        <div class="book-cover-placeholder bg-light p-4 rounded">
+                            <i class="fas fa-book-open fa-5x text-muted"></i>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Judul</th>
-                                        <th>Pengarang</th>
-                                        <th>Tahun</th>
-                                        <th>Kategori</th>
-                                        <th>Status</th>
-                                        <th>Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="bookTableBody">
-                                    <!-- Data buku akan diisi oleh JavaScript -->
-                                    <tr>
-                                        <td colspan="6" class="text-center py-4">
-                                            <i class="fas fa-book-open fa-2x mb-3 text-muted"></i>
-                                            <p>Memuat data buku...</p>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="col-md-8">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="30%">Judul</th>
+                                <td id="detailJudul">-</td>
+                            </tr>
+                            <tr>
+                                <th>Pengarang</th>
+                                <td id="detailPengarang">-</td>
+                            </tr>
+                            <tr>
+                                <th>Tahun Terbit</th>
+                                <td id="detailTahun">-</td>
+                            </tr>
+                            <tr>
+                                <th>Kategori</th>
+                                <td id="detailKategori">-</td>
+                            </tr>
+                            <tr>
+                                <th>ISBN</th>
+                                <td id="detailISBN">-</td>
+                            </tr>
+                            <tr>
+                                <th>Deskripsi</th>
+                                <td id="detailDeskripsi">-</td>
+                            </tr>
+                            <tr>
+                                <th>Status</th>
+                                <td><span class="status-available">Tersedia</span></td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
             </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Tutup
+                </button>
+                <button type="button" class="btn btn-primary" id="btnBorrowFromDetail">
+                    <i class="fas fa-hand-holding me-1"></i>Pinjam Buku Ini
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
             <!-- Pengembalian Tab -->
             <div class="tab-pane fade" id="pengembalian-tab">
