@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self';
         script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'nonce-EDNnf03nceIOfn39fn3e9h3sdfa';
@@ -13,18 +11,6 @@
         img-src 'self' data:;
     ">
     <title>Sistem Peminjaman Buku Perpustakaan</title>
-    
-    <!-- Single instance of CSS links -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <title>Sistem Peminjaman Buku Perpustakaan</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -545,9 +531,9 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span><i class="fas fa-book me-2"></i>Daftar Buku Tersedia</span>
                         <div>
-                            <input type="text" class="form-control" id="judulBuku" placeholder="Cari buku..." 
-       required minlength="3" maxlength="100" 
-       pattern="[A-Za-z0-9 .,'\-]+">
+                            <input type="text" class="form-control" id="searchBuku" placeholder="Cari buku..." 
+                                   minlength="3" maxlength="100" 
+                                   pattern="[A-Za-z0-9 .,'\-]+">
                         </div>
                     </div>
                     <div class="card-body">
@@ -870,138 +856,9 @@
     
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" nonce="EDNnf03nceIOfn39fn3e9h3sdfa"></script>
-    
+
     <!-- Main Application Script -->
     <script nonce="EDNnf03nceIOfn39fn3e9h3sdfa">
-        // ====================== ADD MISSING SEARCH FUNCTION ======================
-        function searchBukuSuggestions() {
-            const searchTerm = document.getElementById('judulBuku').value.toLowerCase();
-            const suggestions = bukuList.filter(book => 
-                book.judul.toLowerCase().includes(searchTerm)
-            );
-            
-            const suggestionsDiv = document.getElementById('bookSuggestions');
-            suggestionsDiv.innerHTML = '';
-            
-            if (searchTerm.length === 0 || suggestions.length === 0) {
-                suggestionsDiv.style.display = 'none';
-                return;
-            }
-            
-            suggestions.slice(0, 5).forEach(book => {
-                const div = document.createElement('div');
-                div.className = 'search-suggestion-item';
-                div.textContent = book.judul;
-                div.addEventListener('click', () => selectBook(book.id));
-                suggestionsDiv.appendChild(div);
-            });
-            
-            suggestionsDiv.style.display = 'block';
-        }
-
-        // ====================== FIX EVENT LISTENERS ======================
-        function setupEventListeners() {
-            // Existing listeners
-            document.getElementById('formPeminjaman').addEventListener('submit', function(e) {
-                e.preventDefault();
-                simpanPeminjaman();
-            });
-            
-            document.getElementById('btnReset').addEventListener('click', resetForm);
-            document.getElementById('judulBuku').addEventListener('input', debounce(searchBukuSuggestions, 300));
-            document.getElementById('searchBuku').addEventListener('input', debounce(searchBuku, 300));
-            document.getElementById('searchPeminjaman').addEventListener('input', debounce(searchPeminjaman, 300));
-            document.getElementById('modalTanggalKembali').addEventListener('change', previewDenda);
-            document.getElementById('btnProsesPengembalian').addEventListener('click', prosesPengembalian);
-            document.getElementById('btnConfirmPayment').addEventListener('click', confirmPayment);
-            document.getElementById('searchRiwayat').addEventListener('input', debounce(searchRiwayat, 300));
-            document.getElementById('btnFilter').addEventListener('click', () => loadRiwayat());
-            document.getElementById('btnPrev').addEventListener('click', prevPage);
-            document.getElementById('btnNext').addEventListener('click', nextPage);
-            document.getElementById('tanggalPinjam').addEventListener('change', function() {
-                const today = new Date().toISOString().split('T')[0];
-                if (this.value < today) {
-                    this.setCustomValidity('Tanggal pinjam tidak boleh sebelum hari ini');
-                } else {
-                    this.setCustomValidity('');
-                }
-            });
-
-            // Add delegated event listeners for dynamic elements
-            document.body.addEventListener('click', function(e) {
-                // Handle book selection
-                if (e.target.closest('.pinjam-btn')) {
-                    const bookId = e.target.closest('.pinjam-btn').dataset.bookId;
-                    selectBook(bookId);
-                }
-                
-                // Handle return process
-                if (e.target.closest('.proses-btn')) {
-                    const loanId = e.target.closest('.proses-btn').dataset.loanId;
-                    showPengembalianModal(loanId);
-                }
-            });
-        }
-
-        // ====================== UPDATE TABLE RENDERING ======================
-        function updateTabelBuku(filteredBooks = null) {
-            const tbody = document.getElementById('bookTableBody');
-            tbody.innerHTML = '';
-
-            const booksToShow = filteredBooks || bukuList.filter(book => 
-                !peminjamanList.some(loan => 
-                    loan.kode_buku === book.kode && !loan.tanggal_kembali
-                )
-            );
-
-            if (booksToShow.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="text-center py-4">
-                            <i class="fas fa-book-open fa-2x mb-3 text-muted"></i>
-                            <p>Tidak ada buku tersedia</p>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            booksToShow.forEach((book, index) => {
-                const row = document.createElement('tr');
-                row.className = 'animate__animated animate__fadeIn';
-                row.innerHTML = `
-                    <td>${book.judul}</td>
-                    <td>${book.pengarang}</td>
-                    <td>${book.tahun_terbit}</td>
-                    <td>${book.kategori}</td>
-                    <td><span class="status-available">Tersedia</span></td>
-                    <td>
-                        <button class="btn btn-primary btn-sm pinjam-btn" data-book-id="${book.id}">
-                            <i class="fas fa-hand-holding me-1"></i>Pinjam
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // ====================== KEEP OTHER FUNCTIONS THE SAME ======================
-        // ... (rest of the existing JavaScript code remains unchanged)
-
-        // Initialize application
-        document.addEventListener('DOMContentLoaded', async function() {
-            try {
-                // Existing initialization code
-                
-                // Add click listener for print button
-                document.getElementById('btnCetakInvoice').addEventListener('click', function() {
-                    window.print();
-                });
-            } catch (error) {
-                console.error("Initialization error:", error);
-                showAlert('error', 'Gagal memuat aplikasi: ' + error.message);
-            }
-        });
         
         // ====================== GLOBAL CONSTANTS ======================
         const DENDA_PER_HARI = 5000; // Rp 5,000 per day late
