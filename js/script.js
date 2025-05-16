@@ -744,6 +744,26 @@ function showAlert(type, message) {
     setTimeout(() => alert.remove(), 5000);
 }
 
+async function confirmPayment() {
+    showLoading('Mengkonfirmasi pembayaran...');
+    try {
+        // Your payment confirmation logic here
+        // For example:
+        await supabase
+            .from('peminjaman')
+            .update({ denda_dibayar: true })
+            .eq('id', currentInvoice.id);
+        
+        confirmModal.hide();
+        showAlert('success', 'Pembayaran denda berhasil dikonfirmasi!');
+        await loadRiwayat();
+    } catch (error) {
+        console.error("Error confirming payment:", error);
+        showAlert('error', 'Gagal mengkonfirmasi pembayaran: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
 // Make functions available globally for HTML event handlers
 window.selectBook = selectBook;
 window.showPengembalianModal = showPengembalianModal;
