@@ -1,8 +1,84 @@
+// Prevent extension conflicts
+(function() {
+    if (typeof window.ethereum !== 'undefined') {
+        Object.defineProperty(window, 'ethereum', {
+            value: window.ethereum,
+            writable: false,
+            configurable: false
+        });
+    }
+})();
+
 // ====================== GLOBAL CONSTANTS ======================
-const DENDA_PER_HARI = 5000; // Rp 5,000 per day late
+const DENDA_PER_HARI = 5000;
 const ITEMS_PER_PAGE = 10;
 const SUPABASE_URL = 'https://xqnlchcbxekwulncjvfy.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxbmxjaGNieGVrd3VsbmNqdmZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNzcxNzksImV4cCI6MjA2Mjg1MzE3OX0.j8nyrPIp64bJL_WziUE8ceSvwrSU0C8VHTd4-qGl8D4';
+
+// ====================== INITIALIZATION ======================
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        // Initialize modals
+        const pengembalianModal = new bootstrap.Modal(document.getElementById('pengembalianModal'));
+        const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        const invoiceModal = new bootstrap.Modal(document.getElementById('invoiceModal'));
+
+        // Set default dates
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('tanggalPinjam').value = today;
+        document.getElementById('modalTanggalKembali').value = today;
+        document.getElementById('filterDari').value = getFirstDayOfMonth();
+        document.getElementById('filterSampai').value = today;
+        
+        // Setup event listeners
+        setupEventListeners();
+        
+        // Load initial data
+        await Promise.all([loadBuku(), loadPeminjaman(), loadRiwayat()]);
+        
+        showAlert('info', 'Selamat datang di Sistem Peminjaman Buku Perpustakaan');
+    } catch (error) {
+        console.error("Initialization error:", error);
+        showAlert('error', 'Gagal memuat aplikasi: ' + error.message);
+    }
+});
+
+// ====================== EVENT LISTENERS ======================
+function setupEventListeners() {
+    // Form submission
+    document.getElementById('formPeminjaman').addEventListener('submit', function(e) {
+        e.preventDefault();
+        simpanPeminjaman();
+    });
+    
+    // Book selection using event delegation
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.select-book-btn')) {
+            const bookId = e.target.closest('.select-book-btn').dataset.bookId;
+            selectBook(bookId);
+        }
+        
+        if (e.target.closest('.return-book-btn')) {
+            const loanId = e.target.closest('.return-book-btn').dataset.loanId;
+            showPengembalianModal(loanId);
+        }
+    });
+    
+    // Other event listeners...
+}
+
+// ====================== BOOK FUNCTIONS ======================
+function selectBook(bookId) {
+    const book = bukuList.find(b => b.id === bookId);
+    if (!book) return;
+
+    document.getElementById('bookId').value = book.id;
+    document.getElementById('judulBuku').value = book.judul;
+    document.getElementById('pengarang').value = book.pengarang;
+    document.getElementById('tahunTerbit').value = book.tahun_terbit;
+    document.getElementById('isbn').value = book.isbn || '';
+    document.getElementById('kategori').value = book.kategori;
+}
 
 // ====================== GLOBAL VARIABLES ======================
 let bukuList = [];
