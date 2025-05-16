@@ -13,17 +13,16 @@ let currentPage = 1;
 let reportChart = null;
 
 // Initialize Supabase client
-const _supabase = window.supabase;
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     db: {
-      schema: 'public'
+        schema: 'public'
     },
     auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
     }
-  });
+});
 
 // Initialize Bootstrap components
 let pengembalianModal, confirmModal, invoiceModal;
@@ -170,6 +169,80 @@ function showBookDetail(book) {
 
 // Panggil fungsi saat DOM siap
 document.addEventListener('DOMContentLoaded', loadBookTables);
+
+// Fungsi untuk pencarian buku global
+function setupBookSearch() {
+    const searchInput = document.getElementById('globalBookSearch');
+    const searchButton = document.getElementById('btnSearchBook');
+    
+    const performSearch = () => {
+        const searchTerm = searchInput.value.toLowerCase();
+        if (searchTerm.length < 2) return;
+        
+        // Cari di semua kategori
+        const allBooks = [...sampleBooks.fiksi, ...sampleBooks.nonfiksi, ...sampleBooks.teknologi, ...sampleBooks.sejarah];
+        const results = allBooks.filter(book => 
+            book.judul.toLowerCase().includes(searchTerm) || 
+            book.pengarang.toLowerCase().includes(searchTerm)
+        ).slice(0, 10);
+        
+        if (results.length > 0) {
+            // Tampilkan hasil pencarian dalam modal
+            const modal = new bootstrap.Modal(document.getElementById('bookDetailModal'));
+            document.getElementById('detailJudul').textContent = 'Hasil Pencarian';
+            document.getElementById('detailPengarang').textContent = '';
+            document.getElementById('detailTahun').textContent = '';
+            document.getElementById('detailKategori').textContent = '';
+            document.getElementById('detailISBN').textContent = '';
+            
+            let resultsHtml = '<div class="list-group">';
+            results.forEach(book => {
+                resultsHtml += `
+                    <a href="#" class="list-group-item list-group-item-action" 
+                       onclick="selectBookFromTable(${JSON.stringify(book).replace(/"/g, '&quot;')}); return false;">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${book.judul}</h6>
+                            <small>${book.kategori}</small>
+                        </div>
+                        <p class="mb-1">${book.pengarang} (${book.tahun})</p>
+                    </a>
+                `;
+            });
+            resultsHtml += '</div>';
+            
+            document.getElementById('detailDeskripsi').innerHTML = resultsHtml;
+            document.getElementById('btnBorrowFromDetail').style.display = 'none';
+            modal.show();
+        } else {
+            showAlert('info', 'Tidak ditemukan buku yang sesuai dengan pencarian Anda');
+        }
+    };
+    
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') performSearch();
+    });
+    
+    searchButton.addEventListener('click', performSearch);
+}
+
+// Event listener untuk tombol pinjam di modal detail
+document.getElementById('btnBorrowFromDetail').addEventListener('click', function() {
+    const book = {
+        judul: document.getElementById('detailJudul').textContent,
+        pengarang: document.getElementById('detailPengarang').textContent,
+        tahun: document.getElementById('detailTahun').textContent,
+        kategori: document.getElementById('detailKategori').textContent,
+        isbn: document.getElementById('detailISBN').textContent
+    };
+    selectBookFromTable(book);
+    bootstrap.Modal.getInstance(document.getElementById('bookDetailModal')).hide();
+});
+
+// Panggil fungsi setup saat DOM siap
+document.addEventListener('DOMContentLoaded', function() {
+    loadBookTables();
+    setupBookSearch();
+});
 
 // ====================== BOOK FUNCTIONS ======================
 async function loadBuku() {
@@ -834,48 +907,8 @@ function setupEventListeners() {
     });
 }
 
-// ====================== MODIFIED LOAD FUNCTIONS ======================
-async function loadBuku() {
-    showLoading('Memuat data buku...');
-    
-    try {
-      const { data, error } = await supabase
-        .from('buku')
-        .select('*')
-        .order('judul', { ascending: true });
-  
-      if (error) throw error;
-  
-      bukuList = data || [];
-      updateTabelBuku();
-    } catch (error) {
-      console.error("Error loading buku:", error);
-      showAlert('error', 'Gagal memuat data buku: ' + error.message);
-    } finally {
-      hideLoading();
-    }
-  }
-  
-  async function loadPeminjaman() {
-    showLoading('Memuat data peminjaman...');
-    try {
-      const { data, error } = await supabase
-        .from('peminjaman')
-        .select('*')
-        .order('tanggal_pinjam', { ascending: false });
-  
-      if (error) throw error;
-  
-      peminjamanList = data || [];
-      updateTabelPengembalian();
-    } catch (error) {
-      console.error("Error loading loans:", error);
-      showAlert('error', 'Gagal memuat data peminjaman: ' + error.message);
-    } finally {
-      hideLoading();
-    }
-  }
-
 // Make functions available globally for HTML event handlers
 window.selectBook = selectBook;
 window.showPengembalianModal = showPengembalianModal;
+window.selectBookFromTable = selectBookFromTable;
+window.showBookDetail = showBookDetail;
