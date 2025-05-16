@@ -396,3 +396,34 @@ th {
 .d-none {
   display: none !important;
 }
+
+/* Tambahkan di bagian CSS */
+.tab-content {
+  padding: 20px 0;
+}
+
+.tab-pane {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.nav-tabs .nav-link {
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 10px 15px;
+  transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+  border-bottom-color: var(--primary-light);
+}
+
+.nav-tabs .nav-link.active {
+  border-bottom-color: var(--primary-color);
+  color: var(--primary-color);
+  background: transparent;
+}
