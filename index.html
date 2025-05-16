@@ -856,10 +856,9 @@
     
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" nonce="EDNnf03nceIOfn39fn3e9h3sdfa"></script>
-
+    
     <!-- Main Application Script -->
     <script nonce="EDNnf03nceIOfn39fn3e9h3sdfa">
-        
         // ====================== GLOBAL CONSTANTS ======================
         const DENDA_PER_HARI = 5000; // Rp 5,000 per day late
         const ITEMS_PER_PAGE = 10;
@@ -983,6 +982,41 @@
             }
         }
 
+        function searchBukuSuggestions() {
+            const searchTerm = document.getElementById('judulBuku').value.toLowerCase();
+            const suggestions = bukuList.filter(book => 
+                book.judul.toLowerCase().includes(searchTerm)
+            );
+            
+            const suggestionsDiv = document.getElementById('bookSuggestions');
+            suggestionsDiv.innerHTML = '';
+            
+            if (searchTerm.length === 0 || suggestions.length === 0) {
+                suggestionsDiv.style.display = 'none';
+                return;
+            }
+            
+            suggestions.slice(0, 5).forEach(book => {
+                const div = document.createElement('div');
+                div.className = 'search-suggestion-item';
+                div.textContent = book.judul;
+                div.addEventListener('click', () => selectBook(book.id));
+                suggestionsDiv.appendChild(div);
+            });
+            
+            suggestionsDiv.style.display = 'block';
+        }
+
+        function searchBuku() {
+            const searchTerm = document.getElementById('searchBuku').value.toLowerCase();
+            const filteredBooks = bukuList.filter(book => 
+                book.judul.toLowerCase().includes(searchTerm) ||
+                book.pengarang.toLowerCase().includes(searchTerm) ||
+                book.kategori.toLowerCase().includes(searchTerm)
+            );
+            updateTabelBuku(filteredBooks);
+        }
+
         function updateTabelBuku(filteredBooks = null) {
             const tbody = document.getElementById('bookTableBody');
             tbody.innerHTML = '';
@@ -1015,7 +1049,7 @@
                     <td>${book.kategori}</td>
                     <td><span class="status-available">Tersedia</span></td>
                     <td>
-                        <button class="btn btn-primary btn-sm" onclick="window.selectBook('${book.id}')">
+                        <button class="btn btn-primary btn-sm" onclick="selectBook('${book.id}')">
                             <i class="fas fa-hand-holding me-1"></i>Pinjam
                         </button>
                     </td>
@@ -1024,7 +1058,7 @@
             });
         }
 
-        window.selectBook = function(bookId) {
+        function selectBook(bookId) {
             const book = bukuList.find(b => b.id === bookId);
             if (!book) return;
 
@@ -1037,30 +1071,7 @@
 
             // Close suggestions if open
             document.getElementById('bookSuggestions').style.display = 'none';
-        };
-
-        // ... (fungsi-fungsi lainnya tetap sama)
-        // Pastikan semua fungsi yang dipanggil dari HTML menggunakan window.functionName
-
-        window.showPengembalianModal = function(loanId) {
-            currentInvoice = peminjamanList.find(loan => loan.id === loanId);
-            if (!currentInvoice) return;
-
-            // Isi data modal
-            document.getElementById('modalJudulBuku').value = currentInvoice.judul_buku;
-            document.getElementById('modalPengarang').value = currentInvoice.pengarang;
-            document.getElementById('modalNamaPeminjam').value = currentInvoice.nama_peminjam;
-            document.getElementById('modalTanggalPinjam').value = formatDate(currentInvoice.tanggal_pinjam);
-            document.getElementById('modalJatuhTempo').value = formatDate(currentInvoice.jatuh_tempo);
-            document.getElementById('modalTanggalKembali').value = new Date().toISOString().split('T')[0];
-
-            // Reset validation
-            document.getElementById('modalTanggalKembali').setCustomValidity('');
-
-            // Hitung denda awal
-            previewDenda();
-            pengembalianModal.show();
-        };
+        }
 
         // ====================== LOAN FUNCTIONS ======================
         async function loadPeminjaman() {
