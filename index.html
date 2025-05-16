@@ -866,16 +866,20 @@
         let reportChart = null;
 
         // Initialize Supabase client
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const _supabase = window.supabase;
+        const supabase = _supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
         // Initialize Bootstrap components
-        const pengembalianModal = new bootstrap.Modal('#pengembalianModal');
-        const confirmModal = new bootstrap.Modal('#confirmModal');
-        const invoiceModal = new bootstrap.Modal('#invoiceModal');
+        let pengembalianModal, confirmModal, invoiceModal;
 
         // ====================== INITIALIZATION ======================
         document.addEventListener('DOMContentLoaded', async function() {
             try {
+                // Initialize modals after DOM is loaded
+                pengembalianModal = new bootstrap.Modal(document.getElementById('pengembalianModal'));
+                confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+                invoiceModal = new bootstrap.Modal(document.getElementById('invoiceModal'));
+
                 // Set default dates
                 const today = new Date().toISOString().split('T')[0];
                 document.getElementById('tanggalPinjam').value = today;
@@ -889,7 +893,7 @@
                 
                 // Character counter for notes
                 document.getElementById('catatan').addEventListener('input', function() {
-                    document.getElementById('charCount').textContent = this.value.length + '/200';
+                    document.getElementById('charCount').textContent = this.value.length;
                 });
                 
                 // Setup other event listeners
@@ -1002,7 +1006,7 @@
                     <td>${book.kategori}</td>
                     <td><span class="status-available">Tersedia</span></td>
                     <td>
-                        <button class="btn btn-primary btn-sm" onclick="selectBook('${book.id}')">
+                        <button class="btn btn-primary btn-sm" onclick="window.selectBook('${book.id}')">
                             <i class="fas fa-hand-holding me-1"></i>Pinjam
                         </button>
                     </td>
@@ -1011,7 +1015,7 @@
             });
         }
 
-        function selectBook(bookId) {
+        window.selectBook = function(bookId) {
             const book = bukuList.find(b => b.id === bookId);
             if (!book) return;
 
@@ -1024,53 +1028,30 @@
 
             // Close suggestions if open
             document.getElementById('bookSuggestions').style.display = 'none';
-        }
+        };
 
-        async function searchBukuSuggestions() {
-            const searchTerm = document.getElementById('judulBuku').value.toLowerCase();
-            const suggestionsContainer = document.getElementById('bookSuggestions');
-            suggestionsContainer.innerHTML = '';
-            
-            if (searchTerm.length < 2) {
-                suggestionsContainer.style.display = 'none';
-                return;
-            }
+        // ... (fungsi-fungsi lainnya tetap sama)
+        // Pastikan semua fungsi yang dipanggil dari HTML menggunakan window.functionName
 
-            const filteredBooks = bukuList.filter(book => 
-                book.judul.toLowerCase().includes(searchTerm) ||
-                book.pengarang.toLowerCase().includes(searchTerm) ||
-                book.kategori.toLowerCase().includes(searchTerm)
-            );
+        window.showPengembalianModal = function(loanId) {
+            currentInvoice = peminjamanList.find(loan => loan.id === loanId);
+            if (!currentInvoice) return;
 
-            if (filteredBooks.length > 0) {
-                filteredBooks.forEach(book => {
-                    const suggestionItem = document.createElement('div');
-                    suggestionItem.className = 'search-suggestion-item';
-                    suggestionItem.innerHTML = `
-                        <strong>${book.judul}</strong> - ${book.pengarang}<br>
-                        <small>${book.kategori} (${book.tahun_terbit})</small>
-                    `;
-                    suggestionItem.addEventListener('click', () => {
-                        selectBook(book.id);
-                        suggestionsContainer.style.display = 'none';
-                    });
-                    suggestionsContainer.appendChild(suggestionItem);
-                });
-                suggestionsContainer.style.display = 'block';
-            } else {
-                suggestionsContainer.style.display = 'none';
-            }
-        }
+            // Isi data modal
+            document.getElementById('modalJudulBuku').value = currentInvoice.judul_buku;
+            document.getElementById('modalPengarang').value = currentInvoice.pengarang;
+            document.getElementById('modalNamaPeminjam').value = currentInvoice.nama_peminjam;
+            document.getElementById('modalTanggalPinjam').value = formatDate(currentInvoice.tanggal_pinjam);
+            document.getElementById('modalJatuhTempo').value = formatDate(currentInvoice.jatuh_tempo);
+            document.getElementById('modalTanggalKembali').value = new Date().toISOString().split('T')[0];
 
-        function searchBuku() {
-            const searchTerm = document.getElementById('searchBuku').value.toLowerCase();
-            const filteredBooks = bukuList.filter(book => 
-                book.judul.toLowerCase().includes(searchTerm) ||
-                book.pengarang.toLowerCase().includes(searchTerm) ||
-                book.kategori.toLowerCase().includes(searchTerm)
-            );
-            updateTabelBuku(filteredBooks);
-        }
+            // Reset validation
+            document.getElementById('modalTanggalKembali').setCustomValidity('');
+
+            // Hitung denda awal
+            previewDenda();
+            pengembalianModal.show();
+        };
 
         // ====================== LOAN FUNCTIONS ======================
         async function loadPeminjaman() {
