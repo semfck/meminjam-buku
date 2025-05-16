@@ -14,7 +14,7 @@ let currentPage = 1;
 let reportChart = null;
 
 // Initialize Supabase client
-const _supabase = window.supabase;
+const _supabase = supabase;
 const supabase = _supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Initialize Bootstrap components
