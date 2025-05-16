@@ -497,3 +497,42 @@ body {
       padding: 10px;
   }
 }
+
+/* Invoice Styles */
+#invoiceModal .modal-header {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+#invoiceModal .table-bordered {
+  border: 1px solid #dee2e6;
+}
+
+#invoiceModal .table-bordered th,
+#invoiceModal .table-bordered td {
+  border: 1px solid #dee2e6;
+}
+
+#invoiceModal .bg-light {
+  background-color: #f8f9fa !important;
+}
+
+@media print {
+  body * {
+      visibility: hidden;
+  }
+  #invoiceModal .modal-content,
+  #invoiceModal .modal-content * {
+      visibility: visible;
+  }
+  #invoiceModal .modal-content {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      border: none;
+  }
+  .no-print {
+      display: none !important;
+  }
+}

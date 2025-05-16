@@ -573,6 +573,147 @@ function showAlert(type, message) {
     setTimeout(() => alert.remove(), 5000);
 }
 
+// Fungsi untuk menampilkan invoice peminjaman
+function showInvoice(loanData, isDenda = false) {
+  // Generate nomor invoice
+  const invoiceNumber = `INV-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(loanData.id).padStart(4, '0')}`;
+  
+  // Isi data invoice
+  document.getElementById('invoiceNumber').textContent = invoiceNumber;
+  document.getElementById('invoiceNamaPeminjam').textContent = loanData.nama_peminjam;
+  document.getElementById('invoiceNoHp').textContent = loanData.no_hp;
+  document.getElementById('invoiceTanggalPinjam').textContent = formatDate(loanData.tanggal_pinjam);
+  document.getElementById('invoiceJatuhTempo').textContent = formatDate(loanData.jatuh_tempo);
+  
+  // Isi detail buku
+  const bookDetails = document.getElementById('invoiceBookDetails');
+  bookDetails.innerHTML = `
+      <tr>
+          <td>${loanData.judul_buku}</td>
+          <td>${loanData.pengarang}</td>
+          <td>${loanData.lama_pinjam} minggu</td>
+          <td>${loanData.status || 'Dipinjam'}</td>
+      </tr>
+  `;
+  
+  // Jika ada denda, tampilkan section denda
+  if (isDenda && loanData.denda > 0) {
+      document.getElementById('dendaSection').classList.remove('d-none');
+      document.getElementById('invoiceTanggalKembali').textContent = formatDate(loanData.tanggal_kembali);
+      document.getElementById('invoiceHariTelat').textContent = loanData.hari_telat || 0;
+      document.getElementById('invoiceDenda').textContent = formatRupiah(loanData.denda);
+  } else {
+      document.getElementById('dendaSection').classList.add('d-none');
+  }
+  
+  // Tampilkan modal
+  const invoiceModal = new bootstrap.Modal('#invoiceModal');
+  invoiceModal.show();
+  
+  // Event listener untuk tombol cetak
+  document.getElementById('btnCetakInvoice').addEventListener('click', function() {
+      printInvoice();
+  });
+}
+
+// Fungsi untuk mencetak invoice
+function printInvoice() {
+  const printContents = document.getElementById('invoiceModal').querySelector('.modal-content').innerHTML;
+  const originalContents = document.body.innerHTML;
+  
+  document.body.innerHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <title>Cetak Invoice</title>
+          <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+          <style>
+              @media print {
+                  body { padding: 20px; }
+                  .no-print { display: none !important; }
+              }
+          </style>
+      </head>
+      <body onload="window.print(); window.close();">
+          ${printContents}
+      </body>
+      </html>
+  `;
+  
+  // Kembalikan konten asli setelah pencetakan selesai
+  setTimeout(() => {
+      document.body.innerHTML = originalContents;
+  }, 1000);
+}
+
+// Modifikasi fungsi prosesPengembalian untuk menampilkan invoice setelah pengembalian
+async function prosesPengembalian() {
+  showLoading('Memproses pengembalian...');
+  try {
+      const returnDate = document.getElementById('modalTanggalKembali').value;
+      const dueDate = new Date(currentInvoice.jatuh_tempo);
+      const diffDays = Math.ceil((new Date(returnDate) - dueDate) / (1000 * 60 * 60 * 24));
+      
+      const updateData = {
+          tanggal_kembali: returnDate,
+          hari_telat: diffDays > 0 ? diffDays : 0,
+          denda: diffDays > 0 ? diffDays * DENDA_PER_HARI : 0,
+          status: diffDays > 0 ? 'Terlambat' : 'Dikembalikan'
+      };
+
+      const { error } = await supabase
+          .from('peminjaman')
+          .update(updateData)
+          .eq('id', currentInvoice.id);
+
+      if (error) throw error;
+
+      pengembalianModal.hide();
+      
+      // Tampilkan invoice setelah pengembalian
+      const updatedLoan = { ...currentInvoice, ...updateData };
+      showInvoice(updatedLoan, true);
+      
+      await loadPeminjaman();
+      await loadRiwayat();
+  } catch (error) {
+      console.error("Error processing return:", error);
+      showAlert('error', 'Gagal memproses pengembalian: ' + error.message);
+  } finally {
+      hideLoading();
+  }
+}
+
+// Modifikasi fungsi simpanPeminjaman untuk menampilkan invoice setelah peminjaman
+async function simpanPeminjaman() {
+  // ... kode sebelumnya tetap sama ...
+  
+  try {
+      const { data, error } = await supabase
+          .from('peminjaman')
+          .insert([loanData])
+          .select(); // Tambahkan .select() untuk mendapatkan data yang baru dibuat
+
+      if (error) throw error;
+
+      showAlert('success', 'Peminjaman berhasil disimpan!');
+      
+      // Tampilkan invoice peminjaman
+      if (data && data.length > 0) {
+          showInvoice(data[0]);
+      }
+      
+      resetForm();
+      await loadPeminjaman();
+      await loadBuku();
+  } catch (error) {
+      console.error("Error saving loan:", error);
+      showAlert('error', 'Gagal menyimpan peminjaman: ' + error.message);
+  } finally {
+      hideLoading();
+  }
+}
+
 // Make functions available globally for HTML event handlers
 window.selectBook = selectBook;
 window.showPengembalianModal = showPengembalianModal;

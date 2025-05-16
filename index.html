@@ -640,6 +640,90 @@
         </div>
     </div>
 
+    <!-- Modal Invoice -->
+<div class="modal fade" id="invoiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">INVOICE PEMINJAMAN BUKU</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <h4>PERPUSTAKAAN ONLINE</h4>
+                    <p>Jl. Contoh No. 123, Kota Anda</p>
+                    <p>Telp: 08123456789 | Email: perpustakaan@example.com</p>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>Informasi Peminjam:</h5>
+                        <p id="invoiceNamaPeminjam"></p>
+                        <p id="invoiceNoHp"></p>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <p><strong>No. Invoice:</strong> <span id="invoiceNumber"></span></p>
+                        <p><strong>Tanggal Pinjam:</strong> <span id="invoiceTanggalPinjam"></span></p>
+                        <p><strong>Jatuh Tempo:</strong> <span id="invoiceJatuhTempo"></span></p>
+                    </div>
+                </div>
+                
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Judul Buku</th>
+                                <th>Pengarang</th>
+                                <th>Lama Pinjam</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoiceBookDetails">
+                            <!-- Data buku akan diisi oleh JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Bagian Denda (akan muncul hanya jika ada denda) -->
+                <div id="dendaSection" class="d-none">
+                    <h5 class="mb-3">Rincian Denda Keterlambatan:</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Tanggal Kembali:</strong> <span id="invoiceTanggalKembali"></span></p>
+                            <p><strong>Keterlambatan:</strong> <span id="invoiceHariTelat"></span> hari</p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <p><strong>Denda per Hari:</strong> Rp5,000</p>
+                            <p><strong>Total Denda:</strong> <span id="invoiceDenda"></span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="border p-3">
+                            <h5>Petugas Perpustakaan</h5>
+                            <p class="mt-5">(___________________)</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border p-3">
+                            <h5>Peminjam</h5>
+                            <p class="mt-5">(___________________)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" id="btnCetakInvoice" class="btn btn-primary">
+                    <i class="fas fa-print me-2"></i>Cetak Invoice
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
