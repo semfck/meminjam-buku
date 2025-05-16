@@ -6,6 +6,7 @@ const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ====================== GLOBAL CONSTANTS ======================
 const DENDA_PER_HARI = 5000; // Rp 5,000 per day late
 const ITEMS_PER_PAGE = 10;
+let fuse = null; // Inisialisasi Fuse.js
 
 // ====================== GLOBAL VARIABLES ======================
 let bukuList = [];
@@ -50,6 +51,98 @@ document.addEventListener('DOMContentLoaded', async function() {
         showAlert('error', 'Gagal memuat aplikasi: ' + error.message);
     }
 });
+
+// ====================== BOOK FUNCTIONS ======================
+async function loadBuku() {
+    showLoading('Memuat data buku...');
+    
+    try {
+        const { data, error } = await supabase
+            .from('buku')
+            .select('*')
+            .order('judul', { ascending: true });
+
+        if (error) throw error;
+
+        bukuList = data || [];
+        
+        // Inisialisasi Fuse.js untuk pencarian fuzzy
+        const fuseOptions = {
+            keys: [
+                { name: 'judul', weight: 0.5 },
+                { name: 'pengarang', weight: 0.3 },
+                { name: 'kategori', weight: 0.2 }
+            ],
+            includeScore: true,
+            threshold: 0.4,
+            minMatchCharLength: 2
+        };
+        fuse = new Fuse(bukuList, fuseOptions);
+        
+        updateTabelBuku();
+    } catch (error) {
+        console.error("Error loading buku:", error);
+        showAlert('error', 'Gagal memuat data buku: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+// ... (kode lainnya tetap sama sampai bagian search functions) ...
+
+function searchBukuSuggestions() {
+    const searchTerm = document.getElementById('judulBuku').value.trim();
+    const suggestionsContainer = document.getElementById('bookSuggestions');
+    suggestionsContainer.innerHTML = '';
+    
+    if (searchTerm.length < 2) {
+        suggestionsContainer.style.display = 'none';
+        return;
+    }
+
+    // Gunakan Fuse.js untuk pencarian fuzzy
+    const results = fuse.search(searchTerm);
+    
+    if (results.length > 0) {
+        results.slice(0, 5).forEach(result => {
+            const book = result.item;
+            const suggestionItem = document.createElement('div');
+            suggestionItem.className = 'search-suggestion-item';
+            suggestionItem.innerHTML = `
+                <strong>${highlightMatches(book.judul, searchTerm)}</strong> - 
+                ${highlightMatches(book.pengarang, searchTerm)}<br>
+                <small>${book.kategori} (${book.tahun_terbit})</small>
+            `;
+            suggestionItem.addEventListener('click', () => {
+                selectBook(book.id);
+                suggestionsContainer.style.display = 'none';
+            });
+            suggestionsContainer.appendChild(suggestionItem);
+        });
+        suggestionsContainer.style.display = 'block';
+    } else {
+        suggestionsContainer.style.display = 'none';
+    }
+}
+
+function searchBuku() {
+    const searchTerm = document.getElementById('searchBuku').value.trim();
+    let filteredBooks = bukuList;
+    
+    if (searchTerm) {
+        const results = fuse.search(searchTerm);
+        filteredBooks = results.map(result => result.item);
+    }
+    
+    updateTabelBuku(filteredBooks);
+}
+
+// Fungsi untuk menandai teks yang cocok
+function highlightMatches(text, searchTerm) {
+    if (!text || !searchTerm) return text;
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return text.replace(regex, '<mark>$1</mark>');
+}
 
 // ====================== MAIN FUNCTIONS ======================
 function setupEventListeners() {
