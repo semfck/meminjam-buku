@@ -1,5 +1,16 @@
 {
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4"
+  },
+  "scripts": {
+  "dev": "react-scripts start"
+},
+"scripts": {
+  "dev": "node server.js",
+  "build": "echo 'No build step required for this project'"
+},
+  "devDependencies": {
+    "@vitejs/plugin-basic-ssl": "^2.0.0",
+    "vite": "^6.3.5"
   }
 }

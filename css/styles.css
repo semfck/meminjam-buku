@@ -315,3 +315,77 @@ body {
   margin-bottom: 0;
   color: var(--secondary-color);
 }
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  body {
+      background-color: #121212;
+      color: #e0e0e0;
+  }
+  
+  .card, .stat-card, .table {
+      background-color: #1e1e1e;
+      color: #e0e0e0;
+  }
+  
+  .table {
+      --bs-table-color: #e0e0e0;
+      --bs-table-bg: #1e1e1e;
+      --bs-table-border-color: #444;
+  }
+  
+  .form-control, .form-select {
+      background-color: #2d2d2d;
+      color: #e0e0e0;
+      border-color: #444;
+  }
+}
+
+/* Animasi tambahan */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.pulse-animation {
+  animation: pulse 2s infinite;
+}
+
+/* Responsive table */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .table-responsive table {
+      display: block;
+      width: 100%;
+  }
+  
+  .table-responsive thead {
+      display: none;
+  }
+  
+  .table-responsive tbody tr {
+      display: block;
+      margin-bottom: 1rem;
+      border: 1px solid var(--bs-border-color);
+      border-radius: var(--border-radius);
+  }
+  
+  .table-responsive tbody td {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem;
+      border: none;
+      border-bottom: 1px solid var(--bs-border-color);
+  }
+  
+  .table-responsive tbody td::before {
+      content: attr(data-label);
+      font-weight: bold;
+      margin-right: 1rem;
+  }
+}
