@@ -731,6 +731,32 @@
         </div>
     </div>
 
+    <!-- Modal Detail Buku -->
+<div class="modal fade" id="bookDetailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detail Buku</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <tr><th>Judul</th><td id="detailJudul">-</td></tr>
+                    <tr><th>Pengarang</th><td id="detailPengarang">-</td></tr>
+                    <tr><th>Tahun</th><td id="detailTahun">-</td></tr>
+                    <tr><th>Kategori</th><td id="detailKategori">-</td></tr>
+                    <tr><th>ISBN</th><td id="detailISBN">-</td></tr>
+                    <tr><th>Deskripsi</th><td id="detailDeskripsi">-</td></tr>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-primary" onclick="selectBookFromDetail()">Pinjam Buku Ini</button>
+            </div>
+        </div>
+    </div>
+</div>
+
     <!-- Modal Konfirmasi Pembayaran -->
     <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
