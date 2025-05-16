@@ -4,558 +4,575 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ====================== GLOBAL CONSTANTS ======================
-const DENDA_PER_HARI = 5000;
+const DENDA_PER_HARI = 5000; // Rp 5,000 per day late
 const ITEMS_PER_PAGE = 10;
 
 // ====================== GLOBAL VARIABLES ======================
+let bukuList = [];
 let peminjamanList = [];
 let riwayatList = [];
 let currentInvoice = null;
 let currentPage = 1;
+let reportChart = null;
+
+// Initialize Bootstrap components
+const pengembalianModal = new bootstrap.Modal(document.getElementById('pengembalianModal'));
+const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
 
 // ====================== INITIALIZATION ======================
-document.addEventListener('DOMContentLoaded', function() {
-  initializeDateInputs();
-  setupEventListeners();
-  loadInitialData();
-  showWelcomeMessage();
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        // Set default dates
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('tanggalPinjam').value = today;
+        document.getElementById('modalTanggalKembali').value = today;
+        document.getElementById('filterDari').value = getFirstDayOfMonth();
+        document.getElementById('filterSampai').value = today;
+        
+        // Event listeners for due date calculation
+        document.getElementById('lamaPinjam').addEventListener('change', hitungJatuhTempo);
+        document.getElementById('tanggalPinjam').addEventListener('change', hitungJatuhTempo);
+        
+        // Setup other event listeners
+        setupEventListeners();
+        
+        // Load initial data
+        await Promise.all([
+            loadBuku(),
+            loadPeminjaman(),
+            loadRiwayat()
+        ]);
+        
+        // Show welcome message
+        showAlert('info', 'Selamat datang di Sistem Peminjaman Buku Perpustakaan');
+    } catch (error) {
+        console.error("Initialization error:", error);
+        showAlert('error', 'Gagal memuat aplikasi: ' + error.message);
+    }
 });
 
-function initializeDateInputs() {
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('tanggalPinjam').value = today;
-  document.getElementById('modalTanggalKembali').value = today;
-  document.getElementById('filterDari').value = getFirstDayOfMonth();
-  document.getElementById('filterSampai').value = today;
-}
-
-// Fungsi yang diperbaiki untuk mendapatkan tanggal awal bulan
-function getFirstDayOfMonth() {
-  const date = new Date();
-  return new Date(date.getFullYear(), date.getMonth(), 2).toISOString().split('T')[0];
-}
-
-async function loadInitialData() {
-  await loadPeminjaman();
-  await loadRiwayat();
-}
-
-// Data Buku Contoh (bisa diganti dengan API atau data dinamis)
-const books = [
-  { id: 1, title: "Laskar Pelangi", author: "Andrea Hirata", category: "Fiksi", available: true },
-  { id: 2, title: "Bumi Manusia", author: "Pramoedya Ananta Toer", category: "Sejarah", available: true },
-  { id: 3, title: "Harry Potter dan Batu Bertuah", author: "J.K. Rowling", category: "Fantasi", available: false },
-  { id: 4, title: "Pulang", author: "Tere Liye", category: "Fiksi", available: true },
-  { id: 5, title: "Negeri 5 Menara", author: "Ahmad Fuadi", category: "Inspirasi", available: true }
-];
-
-// Fungsi untuk memuat buku ke halaman
-function loadBooks(filteredBooks = books) {
-  const container = document.getElementById('booksContainer');
-  container.innerHTML = '';
-
-  if (filteredBooks.length === 0) {
-      container.innerHTML = '<div class="col-12 text-center py-5"><h4>Tidak ada buku yang ditemukan</h4></div>';
-      return;
-  }
-
-  filteredBooks.forEach(book => {
-      const bookCard = document.createElement('div');
-      bookCard.className = 'col-md-4 col-sm-6 mb-4';
-      bookCard.innerHTML = `
-          <div class="book-card">
-              <h3 class="book-title">${book.title}</h3>
-              <p class="book-author">Oleh: ${book.author}</p>
-              <span class="book-category">${book.category}</span>
-              <p class="mt-2">Status: ${book.available ? 
-                  '<span class="text-success">Tersedia</span>' : 
-                  '<span class="text-danger">Dipinjam</span>'}</p>
-              <button onclick="showBookDetail(${book.id})" class="btn btn-sm btn-outline-primary mt-2">
-                  Detail Buku
-              </button>
-          </div>
-      `;
-      container.appendChild(bookCard);
-  });
-}
-
-// Fungsi pencarian buku
-function searchBooks() {
-  const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-  
-  if (searchTerm.length < 2) {
-      document.getElementById('searchSuggestions').style.display = 'none';
-      loadBooks();
-      return;
-  }
-
-  const filteredBooks = books.filter(book => 
-      book.title.toLowerCase().includes(searchTerm) ||
-      book.author.toLowerCase().includes(searchTerm) ||
-      book.category.toLowerCase().includes(searchTerm)
-  );
-
-  loadBooks(filteredBooks);
-  showSuggestions(searchTerm);
-}
-
-// Fungsi untuk menampilkan saran pencarian
-function showSuggestions(searchTerm) {
-  const suggestionsContainer = document.getElementById('searchSuggestions');
-  suggestionsContainer.innerHTML = '';
-  
-  const uniqueSuggestions = new Set();
-  
-  books.forEach(book => {
-      if (book.title.toLowerCase().includes(searchTerm)) {
-          uniqueSuggestions.add(book.title);
-      }
-      if (book.author.toLowerCase().includes(searchTerm)) {
-          uniqueSuggestions.add(book.author);
-      }
-      if (book.category.toLowerCase().includes(searchTerm)) {
-          uniqueSuggestions.add(book.category);
-      }
-  });
-
-  if (uniqueSuggestions.size > 0) {
-      uniqueSuggestions.forEach(suggestion => {
-          const suggestionItem = document.createElement('div');
-          suggestionItem.className = 'suggestion-item';
-          suggestionItem.textContent = suggestion;
-          suggestionItem.addEventListener('click', () => {
-              document.getElementById('searchInput').value = suggestion;
-              searchBooks();
-              suggestionsContainer.style.display = 'none';
-          });
-          suggestionsContainer.appendChild(suggestionItem);
-      });
-      suggestionsContainer.style.display = 'block';
-  } else {
-      suggestionsContainer.style.display = 'none';
-  }
-}
-
-// Fungsi untuk menampilkan detail buku
-function showBookDetail(bookId) {
-  const book = books.find(b => b.id === bookId);
-  if (!book) return;
-
-  const modalTitle = document.getElementById('bookModalTitle');
-  const modalBody = document.getElementById('bookModalBody');
-  
-  modalTitle.textContent = book.title;
-  modalBody.innerHTML = `
-      <p><strong>Penulis:</strong> ${book.author}</p>
-      <p><strong>Kategori:</strong> ${book.category}</p>
-      <p><strong>Status:</strong> ${book.available ? 'Tersedia' : 'Sedang dipinjam'}</p>
-      <hr>
-      <button class="btn ${book.available ? 'btn-success' : 'btn-secondary'}" 
-              ${!book.available ? 'disabled' : ''}>
-          ${book.available ? 'Pinjam Buku' : 'Tidak Tersedia'}
-      </button>
-  `;
-
-  const modal = new bootstrap.Modal(document.getElementById('bookModal'));
-  modal.show();
-}
-
-// Event Listeners
-document.addEventListener('DOMContentLoaded', () => {
-  loadBooks();
-  
-  document.getElementById('searchButton').addEventListener('click', searchBooks);
-  document.getElementById('searchInput').addEventListener('input', searchBooks);
-  
-  document.getElementById('searchInput').addEventListener('focus', function() {
-      if (this.value.length >= 2) {
-          showSuggestions(this.value.toLowerCase());
-      }
-  });
-  
-  document.addEventListener('click', (e) => {
-      if (!e.target.closest('.search-container')) {
-          document.getElementById('searchSuggestions').style.display = 'none';
-      }
-  });
-});
-
-// ====================== EVENT LISTENERS SETUP ======================
+// ====================== MAIN FUNCTIONS ======================
 function setupEventListeners() {
-  // Peminjaman
-  document.getElementById('lamaPinjam').addEventListener('change', hitungJatuhTempo);
-  document.getElementById('tanggalPinjam').addEventListener('change', hitungJatuhTempo);
-  document.getElementById('formPeminjaman').addEventListener('submit', handleSubmitPeminjaman);
-  
-  // Pengembalian
-  document.getElementById('btnProsesPengembalian').addEventListener('click', prosesPengembalian);
-  document.getElementById('searchPeminjaman').addEventListener('input', debounce(searchPeminjaman, 300));
-  
-  // Riwayat
-  document.getElementById('btnFilter').addEventListener('click', () => loadRiwayat());
-  document.getElementById('searchRiwayat').addEventListener('input', debounce(searchRiwayat, 300));
-  document.getElementById('btnPrev').addEventListener('click', prevPage);
-  document.getElementById('btnNext').addEventListener('click', nextPage);
-}
-
-// ====================== PEMINJAMAN FUNCTIONS ======================
-function handleSubmitPeminjaman(e) {
-  e.preventDefault();
-  processPeminjaman();
-}
-
-async function processPeminjaman() {
-  const form = document.getElementById('formPeminjaman');
-  
-  if (!form.checkValidity()) {
-    form.classList.add('was-validated');
-    showAlert('error', 'Harap isi semua field yang wajib!');
-    return;
-  }
-  
-  showLoading('Menyimpan data peminjaman...');
-  
-  try {
-    const peminjamanData = createPeminjamanData();
+    // Form submission
+    document.getElementById('formPeminjaman').addEventListener('submit', function(e) {
+        e.preventDefault();
+        simpanPeminjaman();
+    });
     
-    const { error } = await supabase
-      .from('peminjaman')
-      .insert([peminjamanData]);
+    // Reset form
+    document.getElementById('btnReset').addEventListener('click', resetForm);
 
-    if (error) throw error;
+    // Book search
+    document.getElementById('judulBuku').addEventListener('input', debounce(searchBukuSuggestions, 300));
+    document.getElementById('searchBuku').addEventListener('input', debounce(searchBuku, 300));
 
-    resetForm();
+    // Return functions
+    document.getElementById('searchPeminjaman').addEventListener('input', debounce(searchPeminjaman, 300));
+    document.getElementById('modalTanggalKembali').addEventListener('change', previewDenda);
+    document.getElementById('btnProsesPengembalian').addEventListener('click', prosesPengembalian);
+    document.getElementById('btnConfirmPayment').addEventListener('click', confirmPayment);
+
+    // History functions
+    document.getElementById('searchRiwayat').addEventListener('input', debounce(searchRiwayat, 300));
+    document.getElementById('btnFilter').addEventListener('click', () => loadRiwayat());
+    document.getElementById('btnPrev').addEventListener('click', prevPage);
+    document.getElementById('btnNext').addEventListener('click', nextPage);
+}
+
+// ====================== BOOK FUNCTIONS ======================
+async function loadBuku() {
+    showLoading('Memuat data buku...');
     
-    showAlert('success', 'Peminjaman berhasil disimpan!');
-    await loadPeminjaman();
-  } catch (error) {
-    console.error("Error saving peminjaman:", error);
-    showAlert('error', 'Gagal menyimpan data: ' + error.message);
-  } finally {
-    hideLoading();
-  }
+    try {
+        const { data, error } = await supabase
+            .from('buku')
+            .select('*')
+            .order('judul', { ascending: true });
+
+        if (error) throw error;
+
+        bukuList = data || [];
+        updateTabelBuku();
+    } catch (error) {
+        console.error("Error loading buku:", error);
+        showAlert('error', 'Gagal memuat data buku: ' + error.message);
+    } finally {
+        hideLoading();
+    }
 }
 
-function createPeminjamanData() {
-  return {
-    nama_peminjam: document.getElementById('namaPeminjam').value.trim(),
-    no_hp: document.getElementById('noHp').value.trim(),
-    judul_buku: document.getElementById('judulBuku').value.trim(),
-    tanggal_pinjam: document.getElementById('tanggalPinjam').value,
-    jatuh_tempo: hitungJatuhTempo(),
-    status: 'Dipinjam'
-  };
+function updateTabelBuku() {
+    const tbody = document.getElementById('bookTableBody');
+    tbody.innerHTML = '';
+
+    const availableBooks = bukuList.filter(book => 
+        !peminjamanList.some(loan => 
+            loan.kode_buku === book.kode && !loan.tanggal_kembali
+        )
+    );
+
+    if (availableBooks.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center py-4">
+                    <i class="fas fa-book-open fa-2x mb-3 text-muted"></i>
+                    <p>Tidak ada buku tersedia</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    availableBooks.forEach((book, index) => {
+        const row = document.createElement('tr');
+        row.className = 'animate__animated animate__fadeIn';
+        row.innerHTML = `
+            <td>${book.judul}</td>
+            <td>${book.pengarang}</td>
+            <td>${book.tahun_terbit}</td>
+            <td>${book.kategori}</td>
+            <td><span class="status-available">Tersedia</span></td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="selectBook('${book.id}')">
+                    <i class="fas fa-hand-holding me-1"></i>Pinjam
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
 }
 
-// Fungsi yang diperbaiki untuk menghitung jatuh tempo
+function selectBook(bookId) {
+    const book = bukuList.find(b => b.id === bookId);
+    if (!book) return;
+
+    document.getElementById('bookId').value = book.id;
+    document.getElementById('judulBuku').value = book.judul;
+    document.getElementById('pengarang').value = book.pengarang;
+    document.getElementById('tahunTerbit').value = book.tahun_terbit;
+    document.getElementById('isbn').value = book.isbn || '';
+    document.getElementById('kategori').value = book.kategori;
+
+    // Close suggestions if open
+    document.getElementById('bookSuggestions').style.display = 'none';
+}
+
+async function searchBukuSuggestions() {
+    const searchTerm = document.getElementById('judulBuku').value.toLowerCase();
+    const suggestionsContainer = document.getElementById('bookSuggestions');
+    suggestionsContainer.innerHTML = '';
+    
+    if (searchTerm.length < 2) {
+        suggestionsContainer.style.display = 'none';
+        return;
+    }
+
+    const filteredBooks = bukuList.filter(book => 
+        book.judul.toLowerCase().includes(searchTerm) ||
+        book.pengarang.toLowerCase().includes(searchTerm) ||
+        book.kategori.toLowerCase().includes(searchTerm)
+    );
+
+    if (filteredBooks.length > 0) {
+        filteredBooks.forEach(book => {
+            const suggestionItem = document.createElement('div');
+            suggestionItem.className = 'search-suggestion-item';
+            suggestionItem.innerHTML = `
+                <strong>${book.judul}</strong> - ${book.pengarang}<br>
+                <small>${book.kategori} (${book.tahun_terbit})</small>
+            `;
+            suggestionItem.addEventListener('click', () => {
+                selectBook(book.id);
+                suggestionsContainer.style.display = 'none';
+            });
+            suggestionsContainer.appendChild(suggestionItem);
+        });
+        suggestionsContainer.style.display = 'block';
+    } else {
+        suggestionsContainer.style.display = 'none';
+    }
+}
+
+function searchBuku() {
+    const searchTerm = document.getElementById('searchBuku').value.toLowerCase();
+    updateTabelBuku(bukuList.filter(book => 
+        book.judul.toLowerCase().includes(searchTerm) ||
+        book.pengarang.toLowerCase().includes(searchTerm) ||
+        book.kategori.toLowerCase().includes(searchTerm)
+    ));
+}
+
+// ====================== LOAN FUNCTIONS ======================
+async function loadPeminjaman() {
+    showLoading('Memuat data peminjaman...');
+    try {
+        const { data, error } = await supabase
+            .from('peminjaman')
+            .select('*')
+            .order('tanggal_pinjam', { ascending: false });
+
+        if (error) throw error;
+
+        peminjamanList = data || [];
+        updateTabelPengembalian();
+    } catch (error) {
+        console.error("Error loading loans:", error);
+        showAlert('error', 'Gagal memuat data peminjaman: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+function updateTabelPengembalian() {
+    const tbody = document.getElementById('pengembalianBody');
+    tbody.innerHTML = '';
+
+    const activeLoans = peminjamanList.filter(loan => !loan.tanggal_kembali);
+
+    if (activeLoans.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-4">
+                    <i class="fas fa-book-open fa-2x mb-3 text-muted"></i>
+                    <p>Tidak ada peminjaman aktif</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    activeLoans.forEach((loan, index) => {
+        const row = document.createElement('tr');
+        row.className = 'animate__animated animate__fadeIn';
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${loan.judul_buku}</td>
+            <td>${loan.pengarang}</td>
+            <td>${loan.nama_peminjam}</td>
+            <td>${formatDate(loan.tanggal_pinjam)}</td>
+            <td>${formatDate(loan.jatuh_tempo)}</td>
+            <td><span class="status-borrowed">${loan.status}</span></td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="showPengembalianModal('${loan.id}')">
+                    <i class="fas fa-undo me-1"></i>Proses
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function searchPeminjaman() {
+    const searchTerm = document.getElementById('searchPeminjaman').value.toLowerCase();
+    const activeLoans = peminjamanList.filter(loan => !loan.tanggal_kembali);
+    const filteredLoans = activeLoans.filter(loan => 
+        loan.judul_buku.toLowerCase().includes(searchTerm) ||
+        loan.nama_peminjam.toLowerCase().includes(searchTerm)
+    );
+    updateTabelPengembalian(filteredLoans);
+}
+
+async function simpanPeminjaman() {
+    const form = document.getElementById('formPeminjaman');
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        return;
+    }
+
+    const bookId = document.getElementById('bookId').value;
+    if (!bookId) {
+        showAlert('error', 'Harap pilih buku terlebih dahulu');
+        return;
+    }
+
+    const book = bukuList.find(b => b.id === bookId);
+    if (!book) {
+        showAlert('error', 'Buku tidak ditemukan');
+        return;
+    }
+
+    const loanData = {
+        kode_buku: book.kode,
+        judul_buku: book.judul,
+        pengarang: book.pengarang,
+        nama_peminjam: document.getElementById('namaPeminjam').value,
+        no_hp: document.getElementById('noHp').value,
+        tanggal_pinjam: document.getElementById('tanggalPinjam').value,
+        jatuh_tempo: hitungJatuhTempo(),
+        lama_pinjam: document.getElementById('lamaPinjam').value,
+        status: 'Dipinjam',
+        catatan: document.getElementById('catatan').value
+    };
+
+    showLoading('Menyimpan peminjaman...');
+    try {
+        const { error } = await supabase
+            .from('peminjaman')
+            .insert([loanData]);
+
+        if (error) throw error;
+
+        showAlert('success', 'Peminjaman berhasil disimpan!');
+        resetForm();
+        await loadPeminjaman();
+        await loadBuku();
+    } catch (error) {
+        console.error("Error saving loan:", error);
+        showAlert('error', 'Gagal menyimpan peminjaman: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
 function hitungJatuhTempo() {
-  const tglPinjam = document.getElementById('tanggalPinjam').value;
-  const lamaPinjam = parseInt(document.getElementById('lamaPinjam').value);
-  
-  if (!tglPinjam || !lamaPinjam) return null;
-  
-  const tgl = new Date(tglPinjam);
-  tgl.setDate(tgl.getDate() + (lamaPinjam * 7));
-  return tgl.toISOString().split('T')[0];
+    try {
+        const tglPinjam = document.getElementById('tanggalPinjam').value;
+        const lamaPinjam = parseInt(document.getElementById('lamaPinjam').value);
+        
+        if (tglPinjam && lamaPinjam) {
+            const tglPinjamObj = new Date(tglPinjam);
+            const tglTempo = new Date(tglPinjamObj);
+            tglTempo.setDate(tglPinjamObj.getDate() + (lamaPinjam * 7));
+            
+            document.getElementById('jatuhTempo').value = formatDate(tglTempo.toISOString().split('T')[0]);
+            return tglTempo.toISOString().split('T')[0];
+        }
+        return null;
+    } catch (error) {
+        console.error("Error calculating due date:", error);
+        return null;
+    }
 }
 
-// ====================== PENGEMBALIAN FUNCTIONS ======================
-async function showPengembalianModal(id) {
-  currentInvoice = peminjamanList.find(item => item.id === id);
-  if (!currentInvoice) return;
+// ====================== RETURN FUNCTIONS ======================
+async function showPengembalianModal(loanId) {
+    currentInvoice = peminjamanList.find(loan => loan.id === loanId);
+    if (!currentInvoice) return;
 
-  // Isi data modal
-  document.getElementById('modalJudulBuku').value = currentInvoice.judul_buku;
-  document.getElementById('modalNamaPeminjam').value = currentInvoice.nama_peminjam;
-  document.getElementById('modalTanggalPinjam').value = formatDate(currentInvoice.tanggal_pinjam);
-  document.getElementById('modalJatuhTempo').value = formatDate(currentInvoice.jatuh_tempo);
-  document.getElementById('modalTanggalKembali').value = new Date().toISOString().split('T')[0];
+    // Isi data modal
+    document.getElementById('modalJudulBuku').value = currentInvoice.judul_buku;
+    document.getElementById('modalPengarang').value = currentInvoice.pengarang;
+    document.getElementById('modalNamaPeminjam').value = currentInvoice.nama_peminjam;
+    document.getElementById('modalTanggalPinjam').value = formatDate(currentInvoice.tanggal_pinjam);
+    document.getElementById('modalJatuhTempo').value = formatDate(currentInvoice.jatuh_tempo);
+    document.getElementById('modalTanggalKembali').value = new Date().toISOString().split('T')[0];
 
-  // Tampilkan modal
-  new bootstrap.Modal(document.getElementById('pengembalianModal')).show();
+    // Hitung denda awal
+    previewDenda();
+    pengembalianModal.show();
+}
+
+function previewDenda() {
+    const returnDate = new Date(document.getElementById('modalTanggalKembali').value);
+    const dueDate = new Date(currentInvoice.jatuh_tempo);
+    const diffTime = returnDate - dueDate;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const hariTelat = diffDays > 0 ? diffDays : 0;
+    const denda = hariTelat * DENDA_PER_HARI;
+
+    document.getElementById('modalHariTelat').value = `${hariTelat} hari`;
+    document.getElementById('modalDenda').value = formatRupiah(denda);
 }
 
 async function prosesPengembalian() {
-  const tglKembali = document.getElementById('modalTanggalKembali').value;
-  
-  if (!tglKembali) {
-    showAlert('error', 'Harap pilih tanggal kembali!');
-    return;
-  }
+    showLoading('Memproses pengembalian...');
+    try {
+        const updateData = {
+            tanggal_kembali: document.getElementById('modalTanggalKembali').value,
+            hari_telat: parseInt(document.getElementById('modalHariTelat').value.split(' ')[0]),
+            denda: parseInt(document.getElementById('modalDenda').value.replace(/\D/g, '')),
+            status: document.getElementById('modalDenda').value !== 'Rp0' ? 'Terlambat' : 'Dikembalikan'
+        };
 
-  showLoading('Memproses pengembalian...');
-  
-  try {
-    const { denda, hariTelat } = await calculateDenda(currentInvoice.id, tglKembali);
-    
-    const { error } = await supabase
-      .from('peminjaman')
-      .update({
-        tanggal_kembali: tglKembali,
-        denda: denda,
-        hari_telat: hariTelat,
-        status: denda > 0 ? 'Terlambat' : 'Dikembalikan'
-      })
-      .eq('id', currentInvoice.id);
+        const { error } = await supabase
+            .from('peminjaman')
+            .update(updateData)
+            .eq('id', currentInvoice.id);
 
-    if (error) throw error;
+        if (error) throw error;
 
-    showAlert('success', 'Pengembalian berhasil diproses!');
-    await loadPeminjaman();
-    await loadRiwayat();
-    bootstrap.Modal.getInstance(document.getElementById('pengembalianModal')).hide();
-  } catch (error) {
-    console.error("Error processing return:", error);
-    showAlert('error', 'Gagal memproses: ' + error.message);
-  } finally {
-    hideLoading();
-  }
+        pengembalianModal.hide();
+        showAlert('success', 'Pengembalian berhasil diproses!');
+        await loadPeminjaman();
+        await loadRiwayat();
+    } catch (error) {
+        console.error("Error processing return:", error);
+        showAlert('error', 'Gagal memproses pengembalian: ' + error.message);
+    } finally {
+        hideLoading();
+    }
 }
 
-async function calculateDenda(id, tglKembali) {
-  const peminjaman = peminjamanList.find(item => item.id === id);
-  const tglTempo = new Date(peminjaman.jatuh_tempo);
-  const tglKembaliObj = new Date(tglKembali);
-  
-  const diffTime = tglKembaliObj - tglTempo;
-  const hariTelat = diffTime > 0 ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) : 0;
-  const denda = hariTelat * DENDA_PER_HARI;
-  
-  return { denda, hariTelat };
+// ====================== HISTORY FUNCTIONS ======================
+async function loadRiwayat() {
+    showLoading('Memuat riwayat...');
+    try {
+        let query = supabase
+            .from('peminjaman')
+            .select('*', { count: 'exact' })
+            .order('tanggal_pinjam', { ascending: false });
+
+        // Filter tanggal
+        const dari = document.getElementById('filterDari').value;
+        const sampai = document.getElementById('filterSampai').value;
+        if (dari && sampai) {
+            query = query.gte('tanggal_pinjam', dari).lte('tanggal_pinjam', sampai);
+        }
+
+        // Pencarian
+        const searchTerm = document.getElementById('searchRiwayat').value.toLowerCase();
+        if (searchTerm) {
+            query = query.or(`nama_peminjam.ilike.%${searchTerm}%,judul_buku.ilike.%${searchTerm}%`);
+        }
+
+        const { data, error, count } = await query;
+        if (error) throw error;
+
+        riwayatList = data || [];
+        document.getElementById('totalData').textContent = count || 0;
+        updateRiwayatTable();
+        updatePagination();
+    } catch (error) {
+        console.error("Error loading history:", error);
+        showAlert('error', 'Gagal memuat riwayat: ' + error.message);
+    } finally {
+        hideLoading();
+    }
 }
 
-// ====================== UTILITY FUNCTIONS ======================
-function formatDate(dateString) {
-  if (!dateString) return '-';
-  return new Date(dateString).toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric'
-  });
+function updateRiwayatTable() {
+    const tbody = document.getElementById('riwayatBody');
+    tbody.innerHTML = '';
+
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    const currentData = riwayatList.slice(start, end);
+
+    if (currentData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="10" class="text-center py-4">
+                    <i class="fas fa-book-open fa-2x mb-3 text-muted"></i>
+                    <p>Tidak ada data riwayat</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    currentData.forEach((loan, index) => {
+        const row = document.createElement('tr');
+        row.className = 'animate__animated animate__fadeIn';
+        row.innerHTML = `
+            <td>${start + index + 1}</td>
+            <td>${loan.judul_buku}</td>
+            <td>${loan.pengarang}</td>
+            <td>${loan.nama_peminjam}</td>
+            <td>${formatDate(loan.tanggal_pinjam)}</td>
+            <td>${formatDate(loan.jatuh_tempo)}</td>
+            <td>${loan.tanggal_kembali ? formatDate(loan.tanggal_kembali) : '-'}</td>
+            <td>${loan.hari_telat || '-'} hari</td>
+            <td>${loan.denda ? formatRupiah(loan.denda) : '-'}</td>
+            <td><span class="${loan.status === 'Terlambat' ? 'status-late' : 'status-returned'}">${loan.status}</span></td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Hitung total denda
+    const totalDenda = riwayatList.reduce((sum, loan) => sum + (loan.denda || 0), 0);
+    document.getElementById('totalDenda').textContent = formatRupiah(totalDenda);
 }
 
-function resetForm() {
-  document.getElementById('formPeminjaman').reset();
-  document.getElementById('formPeminjaman').classList.remove('was-validated');
-  hitungJatuhTempo();
-}
-
-function debounce(func, timeout = 300) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => func.apply(this, args), timeout);
-  };
-}
-
-// Menampilkan notifikasi
-function showAlert(type, message) {
-  const alertContainer = document.getElementById('alertContainer');
-  const icons = {
-    success: 'fa-circle-check',
-    error: 'fa-circle-exclamation',
-    warning: 'fa-triangle-exclamation',
-    info: 'fa-circle-info'
-  };
-
-  const alertEl = document.createElement('div');
-  alertEl.className = `alert alert-${type} alert-dismissible fade show animate__animated animate__fadeInRight`;
-  alertEl.innerHTML = `
-    <div class="d-flex align-items-center gap-2">
-      <i class="fas ${icons[type]}"></i>
-      <div>${message}</div>
-      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-    </div>
-  `;
-
-  alertContainer.appendChild(alertEl);
-
-  // Auto-hide setelah 5 detik
-  setTimeout(() => {
-    alertEl.classList.remove('show');
-    setTimeout(() => alertEl.remove(), 150);
-  }, 5000);
-}
-
-// Menampilkan loading overlay
-function showLoading(text = 'Memproses...') {
-  const loadingOverlay = document.getElementById('loadingOverlay');
-  const loadingText = document.getElementById('loadingText');
-  
-  loadingText.textContent = text;
-  loadingOverlay.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
-
-// Menyembunyikan loading overlay
-function hideLoading() {
-  const loadingOverlay = document.getElementById('loadingOverlay');
-  loadingOverlay.style.display = 'none';
-  document.body.style.overflow = 'auto';
-}
-
-// Update tabel pengembalian
-function updateTabelPengembalian() {
-  const tbody = document.getElementById('pengembalianBody');
-  tbody.innerHTML = '';
-
-  if (peminjamanList.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="8" class="text-center py-4">
-          <i class="fas fa-book-open fa-2x mb-3 text-muted"></i>
-          <p>Tidak ada peminjaman aktif</p>
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  peminjamanList.forEach((item, index) => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${index + 1}</td>
-      <td>${item.judul_buku}</td>
-      <td>${item.nama_peminjam}</td>
-      <td>${formatDate(item.tanggal_pinjam)}</td>
-      <td>${formatDate(item.jatuh_tempo)}</td>
-      <td><span class="status-badge ${item.status === 'Dipinjam' ? 'bg-warning' : 'bg-danger'}">${item.status}</span></td>
-      <td>
-        <button class="btn btn-sm btn-primary" onclick="showPengembalianModal('${item.id}')">
-          <i class="fas fa-undo me-1"></i>Proses
-        </button>
-      </td>
-    `;
-    tbody.appendChild(row);
-  });
-}
-
-// Update tabel riwayat
-function updateRiwayatUI(data) {
-  const tbody = document.getElementById('riwayatBody');
-  tbody.innerHTML = '';
-
-  if (data.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="10" class="text-center py-4">
-          <i class="fas fa-book-open fa-2x mb-3 text-muted"></i>
-          <p>Tidak ada riwayat peminjaman</p>
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  data.forEach((item, index) => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${index + 1}</td>
-      <td>${item.judul_buku}</td>
-      <td>${item.nama_peminjam}</td>
-      <td>${formatDate(item.tanggal_pinjam)}</td>
-      <td>${formatDate(item.jatuh_tempo)}</td>
-      <td>${item.tanggal_kembali ? formatDate(item.tanggal_kembali) : '-'}</td>
-      <td>${item.hari_telat || '-'}</td>
-      <td>${item.denda ? formatCurrency(item.denda) : '-'}</td>
-      <td><span class="status-badge ${item.status === 'Dikembalikan' ? 'bg-success' : 'bg-danger'}">${item.status}</span></td>
-    `;
-    tbody.appendChild(row);
-  });
-}
-
-// Pencarian peminjaman aktif
-function searchPeminjaman() {
-  const searchTerm = document.getElementById('searchPeminjaman').value.toLowerCase();
-  const filtered = peminjamanList.filter(item => 
-    item.nama_peminjam.toLowerCase().includes(searchTerm) ||
-    item.judul_buku.toLowerCase().includes(searchTerm)
-  );
-  updateTabelPengembalian(filtered);
-}
-
-// Pencarian riwayat
 function searchRiwayat() {
-  const searchTerm = document.getElementById('searchRiwayat').value.toLowerCase();
-  const filtered = riwayatList.filter(item => 
-    item.nama_peminjam.toLowerCase().includes(searchTerm) ||
-    item.judul_buku.toLowerCase().includes(searchTerm)
-  );
-  updateRiwayatUI(filtered);
+    const searchTerm = document.getElementById('searchRiwayat').value.toLowerCase();
+    const filteredRiwayat = riwayatList.filter(loan => 
+        loan.judul_buku.toLowerCase().includes(searchTerm) ||
+        loan.nama_peminjam.toLowerCase().includes(searchTerm)
+    );
+    updateRiwayatTable(filteredRiwayat);
 }
 
-// Navigasi halaman
+function updatePagination() {
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    btnPrev.disabled = currentPage === 1;
+    btnNext.disabled = currentPage * ITEMS_PER_PAGE >= riwayatList.length;
+}
+
 function prevPage() {
-  if (currentPage > 1) {
-    currentPage--;
-    loadRiwayat();
-  }
+    if (currentPage > 1) {
+        currentPage--;
+        updateRiwayatTable();
+        updatePagination();
+    }
 }
 
 function nextPage() {
-  if (currentPage * ITEMS_PER_PAGE < riwayatList.length) {
-    currentPage++;
-    loadRiwayat();
-  }
-}
-
-// Generate laporan
-function generateReport() {
-  const ctx = document.getElementById('reportChart').getContext('2d');
-  
-  if (reportChart) {
-    reportChart.destroy();
-  }
-
-  reportChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Dipinjam', 'Dikembalikan', 'Terlambat'],
-      datasets: [{
-        label: 'Statistik Peminjaman',
-        data: [
-          peminjamanList.length,
-          riwayatList.filter(item => item.status === 'Dikembalikan').length,
-          riwayatList.filter(item => item.status === 'Terlambat').length
-        ],
-        backgroundColor: [
-          'rgba(54, 162, 235, 0.5)',
-          'rgba(75, 192, 192, 0.5)',
-          'rgba(255, 99, 132, 0.5)'
-        ],
-        borderColor: [
-          'rgb(54, 162, 235)',
-          'rgb(75, 192, 192)',
-          'rgb(255, 99, 132)'
-        ],
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          position: 'top',
-        },
-        title: {
-          display: true,
-          text: 'Statistik Peminjaman Buku'
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            stepSize: 1
-          }
-        }
-      }
+    if (currentPage * ITEMS_PER_PAGE < riwayatList.length) {
+        currentPage++;
+        updateRiwayatTable();
+        updatePagination();
     }
-  });
 }
 
-// Format tanggal ke dd/mm/yyyy
-function getFirstDayOfMonth() {
-  const date = new Date();
-  return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+// ====================== HELPER FUNCTIONS ======================
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    const options = { day: '2-digit', month: 'long', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('id-ID', options);
 }
+
+function formatRupiah(amount) {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0
+    }).format(amount);
+}
+
+function getFirstDayOfMonth() {
+    const date = new Date();
+    return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+}
+
+function debounce(func, timeout = 300) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => func.apply(this, args), timeout);
+    };
+}
+
+function resetForm() {
+    document.getElementById('formPeminjaman').reset();
+    document.getElementById('formPeminjaman').classList.remove('was-validated');
+    document.getElementById('bookId').value = '';
+    document.getElementById('jatuhTempo').value = '';
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('tanggalPinjam').value = today;
+}
+
+function showLoading(message = 'Memproses...') {
+    document.getElementById('loadingText').textContent = message;
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function showAlert(type, message) {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} animate__animated animate__fadeInRight`;
+    alert.role = 'alert';
+    alert.innerHTML = `
+        <i class="fas fa-${type === 'error' ? 'times-circle' : 'check-circle'} me-2"></i>
+        ${message}
+    `;
+    document.getElementById('alertContainer').appendChild(alert);
+    setTimeout(() => alert.remove(), 5000);
+}
+
+// Make functions available globally for HTML event handlers
+window.selectBook = selectBook;
+window.showPengembalianModal = showPengembalianModal;
