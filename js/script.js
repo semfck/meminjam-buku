@@ -714,6 +714,254 @@ async function simpanPeminjaman() {
   }
 }
 
+// ====================== INVOICE FUNCTIONS ======================
+
+/**
+ * Show invoice for book loan or return
+ * @param {Object} loanData - Loan data object
+ * @param {boolean} isLateReturn - Whether this is for a late return
+ */
+function showInvoice(loanData, isLateReturn = false) {
+  // Generate invoice number (INV-YYYYMM-XXXX)
+  const now = new Date();
+  const invoiceNumber = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}-${String(loanData.id).padStart(4, '0')}`;
+  
+  // Format date to Indonesian format (dd MonthName yyyy)
+  const formatDate = (dateString) => {
+      if (!dateString) return '-';
+      const options = { day: '2-digit', month: 'long', year: 'numeric' };
+      return new Date(dateString).toLocaleDateString('id-ID', options);
+  };
+
+  // Format currency to Rupiah
+  const formatRupiah = (amount) => {
+      return new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+          minimumFractionDigits: 0
+      }).format(amount || 0);
+  };
+
+  // Fill in invoice data
+  document.getElementById('invoiceNumber').textContent = invoiceNumber;
+  document.getElementById('invoiceNamaPeminjam').textContent = loanData.nama_peminjam || '-';
+  document.getElementById('invoiceNoHp').textContent = loanData.no_hp || '-';
+  document.getElementById('invoiceTanggalPinjam').textContent = formatDate(loanData.tanggal_pinjam);
+  document.getElementById('invoiceJatuhTempo').textContent = formatDate(loanData.jatuh_tempo);
+  
+  // Fill book details
+  const bookDetails = document.getElementById('invoiceBookDetails');
+  bookDetails.innerHTML = `
+      <tr>
+          <td>${loanData.judul_buku || '-'}</td>
+          <td>${loanData.pengarang || '-'}</td>
+          <td>${loanData.lama_pinjam ? loanData.lama_pinjam + ' minggu' : '-'}</td>
+          <td>
+              <span class="badge ${loanData.status === 'Terlambat' ? 'bg-danger' : 'bg-success'}">
+                  ${loanData.status || 'Dipinjam'}
+              </span>
+          </td>
+      </tr>
+  `;
+  
+  // Handle late return section
+  const dendaSection = document.getElementById('dendaSection');
+  if (isLateReturn && loanData.denda > 0) {
+      dendaSection.classList.remove('d-none');
+      document.getElementById('invoiceTanggalKembali').textContent = formatDate(loanData.tanggal_kembali);
+      document.getElementById('invoiceHariTelat').textContent = loanData.hari_telat || 0;
+      document.getElementById('invoiceDenda').textContent = formatRupiah(loanData.denda);
+  } else {
+      dendaSection.classList.add('d-none');
+  }
+  
+  // Initialize and show modal
+  const invoiceModal = new bootstrap.Modal('#invoiceModal');
+  invoiceModal.show();
+  
+  // Set up print button
+  setupPrintButton();
+}
+
+/**
+* Set up the print invoice button functionality
+*/
+function setupPrintButton() {
+  document.getElementById('btnCetakInvoice').onclick = function() {
+      // Clone the modal content
+      const printContent = document.getElementById('invoiceModal').cloneNode(true);
+      
+      // Remove elements with no-print class
+      const noPrintElements = printContent.querySelectorAll('.no-print');
+      noPrintElements.forEach(el => el.remove());
+      
+      // Create print window
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Cetak Invoice Peminjaman Buku</title>
+              <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+              <style>
+                  body {
+                      padding: 20px;
+                      font-size: 14px;
+                  }
+                  .table {
+                      font-size: 13px;
+                  }
+                  .table th {
+                      background-color: #f8f9fa !important;
+                  }
+                  .badge {
+                      font-size: 12px;
+                  }
+                  .signature-box {
+                      height: 80px;
+                      margin-top: 40px;
+                      position: relative;
+                  }
+                  .signature-line {
+                      position: absolute;
+                      bottom: 0;
+                      width: 100%;
+                      border-top: 1px solid #000;
+                  }
+                  @page {
+                      size: A4;
+                      margin: 10mm;
+                  }
+                  @media print {
+                      body {
+                          padding: 0;
+                          font-size: 12px;
+                      }
+                      .table {
+                          font-size: 11px;
+                      }
+                      .modal-header {
+                          background-color: #4361ee !important;
+                          color: white !important;
+                          -webkit-print-color-adjust: exact;
+                          print-color-adjust: exact;
+                      }
+                  }
+              </style>
+          </head>
+          <body onload="window.print();">
+              ${printContent.querySelector('.modal-content').outerHTML}
+          </body>
+          </html>
+      `);
+      printWindow.document.close();
+  };
+}
+
+// ====================== INTEGRATION WITH EXISTING FUNCTIONS ======================
+
+/**
+* Modified save loan function to show invoice after successful submission
+*/
+async function simpanPeminjaman() {
+  // ... (your existing validation code) ...
+  
+  try {
+      const { data, error } = await supabase
+          .from('peminjaman')
+          .insert([loanData])
+          .select(); // Important: Add .select() to get the inserted data
+
+      if (error) throw error;
+
+      showAlert('success', 'Peminjaman berhasil disimpan!');
+      
+      // Show invoice after successful submission
+      if (data && data.length > 0) {
+          setTimeout(() => {
+              showInvoice(data[0]);
+          }, 500);
+      }
+      
+      resetForm();
+      await loadPeminjaman();
+      await loadBuku();
+  } catch (error) {
+      console.error("Error saving loan:", error);
+      showAlert('error', 'Gagal menyimpan peminjaman: ' + error.message);
+  } finally {
+      hideLoading();
+  }
+}
+
+/**
+* Modified return process function to show invoice for late returns
+*/
+async function prosesPengembalian() {
+  showLoading('Memproses pengembalian...');
+  try {
+      const returnDate = document.getElementById('modalTanggalKembali').value;
+      const dueDate = new Date(currentInvoice.jatuh_tempo);
+      const diffDays = Math.ceil((new Date(returnDate) - dueDate) / (1000 * 60 * 60 * 24));
+      
+      const updateData = {
+          tanggal_kembali: returnDate,
+          hari_telat: diffDays > 0 ? diffDays : 0,
+          denda: diffDays > 0 ? diffDays * DENDA_PER_HARI : 0,
+          status: diffDays > 0 ? 'Terlambat' : 'Dikembalikan'
+      };
+
+      const { data, error } = await supabase
+          .from('peminjaman')
+          .update(updateData)
+          .eq('id', currentInvoice.id)
+          .select(); // Important: Add .select() to get the updated data
+
+      if (error) throw error;
+
+      pengembalianModal.hide();
+      
+      // Show invoice if there's a late fee
+      if (data && data.length > 0 && updateData.denda > 0) {
+          setTimeout(() => {
+              showInvoice(data[0], true);
+          }, 500);
+      } else {
+          showAlert('success', 'Pengembalian berhasil diproses!');
+      }
+      
+      await loadPeminjaman();
+      await loadRiwayat();
+  } catch (error) {
+      console.error("Error processing return:", error);
+      showAlert('error', 'Gagal memproses pengembalian: ' + error.message);
+  } finally {
+      hideLoading();
+  }
+}
+
+// ====================== HELPER FUNCTIONS ======================
+
+/**
+* Format date to dd/mm/yyyy
+*/
+function formatDate(dateString) {
+  if (!dateString) return '-';
+  const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+  return new Date(dateString).toLocaleDateString('id-ID', options);
+}
+
+/**
+* Format number to Rupiah currency
+*/
+function formatRupiah(amount) {
+  return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0
+  }).format(amount || 0);
+}
+
 // Make functions available globally for HTML event handlers
 window.selectBook = selectBook;
 window.showPengembalianModal = showPengembalianModal;
