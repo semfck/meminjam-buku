@@ -1,6 +1,9 @@
 // ====================== SUPABASE INITIALIZATION ======================
+// Correct initialization (make sure this runs first)
 const SUPABASE_URL = 'https://xqnlchcbxekwulncjvfy.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxbmxjaGNieGVrd3VsbmNqdmZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNzcxNzksImV4cCI6MjA2Mjg1MzE3OX0.j8nyrPIp64bJL_WziUE8ceSvwrSU0C8VHTd4-qGl8D4';
+
+// Make sure @supabase/supabase-js is loaded first
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ====================== GLOBAL CONSTANTS ======================
@@ -1054,6 +1057,19 @@ function formatRupiah(amount) {
       minimumFractionDigits: 0
   }).format(amount || 0);
 }
+
+// Check for existing Ethereum provider
+if (window.ethereum) {
+    console.log('Ethereum wallet detected');
+    
+    // If you need to handle multiple wallets, you can detect which one is active
+    if (window.ethereum.isMetaMask) {
+      console.log('MetaMask detected');
+    }
+    // Add similar checks for other wallets
+  } else {
+    console.log('No Ethereum wallet detected');
+  }
 
 // Make functions available globally for HTML event handlers
 window.selectBook = selectBook;

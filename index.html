@@ -822,10 +822,41 @@
     
     <!-- Main Application Script -->
     <script>
-        // ====================== SUPABASE INITIALIZATION ======================
-        const SUPABASE_URL = 'https://xqnlchcbxekwulncjvfy.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxbmxjaGNieGVrd3VsbmNqdmZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNzcxNzksImV4cCI6MjA2Mjg1MzE3OX0.j8nyrPIp64bJL_WziUE8ceSvwrSU0C8VHTd4-qGl8D4';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // Initialize Supabase first
+        document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    // Inisialisasi Supabase
+    const SUPABASE_URL = 'https://xqnlchcbxekwulncjvfy.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxbmxjaGNieGVrd3VsbmNqdmZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNzcxNzksImV4cCI6MjA2Mjg1MzE3OX0.j8nyrPIp64bJL_WziUE8ceSvwrSU0C8VHTd4-qGl8D4';
+    
+    // Buat client Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // Set tanggal default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('tanggalPinjam').value = today;
+    document.getElementById('modalTanggalKembali').value = today;
+    document.getElementById('filterDari').value = getFirstDayOfMonth();
+    document.getElementById('filterSampai').value = today;
+    
+    // Event listeners
+    document.getElementById('lamaPinjam').addEventListener('change', hitungJatuhTempo);
+    document.getElementById('tanggalPinjam').addEventListener('change', hitungJatuhTempo);
+    setupEventListeners();
+    
+    // Load data awal
+    await Promise.all([
+      loadBuku(),
+      loadPeminjaman(),
+      loadRiwayat()
+    ]);
+    
+    showAlert('info', 'Selamat datang di Sistem Peminjaman Buku Perpustakaan');
+  } catch (error) {
+    console.error("Initialization error:", error);
+    showAlert('error', 'Gagal memuat aplikasi: ' + error.message);
+  }
+});
 
         // ====================== GLOBAL CONSTANTS ======================
         const DENDA_PER_HARI = 5000; // Rp 5,000 per day late
@@ -841,8 +872,9 @@
 
         // Initialize Bootstrap components
         const pengembalianModal = new bootstrap.Modal('#pengembalianModal');
-        const confirmModal = new bootstrap.Modal('#confirmModal');
-        const invoiceModal = new bootstrap.Modal('#invoiceModal');
+const confirmModal = new bootstrap.Modal('#confirmModal');
+const invoiceModal = new bootstrap.Modal('#invoiceModal');
+
 
         // ====================== INITIALIZATION ======================
         document.addEventListener('DOMContentLoaded', async function() {
