@@ -14,7 +14,16 @@ let reportChart = null;
 
 // Initialize Supabase client
 const _supabase = window.supabase;
-const supabase = _supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
+    db: {
+      schema: 'public'
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false
+    }
+  });
 
 // Initialize Bootstrap components
 let pengembalianModal, confirmModal, invoiceModal;
@@ -741,6 +750,48 @@ function setupEventListeners() {
         }
     });
 }
+
+// ====================== MODIFIED LOAD FUNCTIONS ======================
+async function loadBuku() {
+    showLoading('Memuat data buku...');
+    
+    try {
+      const { data, error } = await supabase
+        .from('buku')
+        .select('*')
+        .order('judul', { ascending: true });
+  
+      if (error) throw error;
+  
+      bukuList = data || [];
+      updateTabelBuku();
+    } catch (error) {
+      console.error("Error loading buku:", error);
+      showAlert('error', 'Gagal memuat data buku: ' + error.message);
+    } finally {
+      hideLoading();
+    }
+  }
+  
+  async function loadPeminjaman() {
+    showLoading('Memuat data peminjaman...');
+    try {
+      const { data, error } = await supabase
+        .from('peminjaman')
+        .select('*')
+        .order('tanggal_pinjam', { ascending: false });
+  
+      if (error) throw error;
+  
+      peminjamanList = data || [];
+      updateTabelPengembalian();
+    } catch (error) {
+      console.error("Error loading loans:", error);
+      showAlert('error', 'Gagal memuat data peminjaman: ' + error.message);
+    } finally {
+      hideLoading();
+    }
+  }
 
 // Make functions available globally for HTML event handlers
 window.selectBook = selectBook;
