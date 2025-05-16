@@ -865,7 +865,7 @@
         const ITEMS_PER_PAGE = 10;
         const SUPABASE_URL = 'https://xqnlchcbxekwulncjvfy.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxbmxjaGNieGVrd3VsbmNqdmZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNzcxNzksImV4cCI6MjA2Mjg1MzE3OX0.j8nyrPIp64bJL_WziUE8ceSvwrSU0C8VHTd4-qGl8D4';
-
+    
         // ====================== GLOBAL VARIABLES ======================
         let bukuList = [];
         let peminjamanList = [];
@@ -873,92 +873,59 @@
         let currentInvoice = null;
         let currentPage = 1;
         let reportChart = null;
-
+    
         // Initialize Supabase client
         const _supabase = window.supabase;
         const supabase = _supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
         // Initialize Bootstrap components
         let pengembalianModal, confirmModal, invoiceModal;
-
+    
+        // ====================== GLOBAL FUNCTIONS FOR HTML EVENT HANDLERS ======================
+        // These need to be exposed to the window object early for HTML onclick handlers
+        window.selectBook = selectBook;
+        window.showPengembalianModal = showPengembalianModal;
+    
         // ====================== INITIALIZATION ======================
         document.addEventListener('DOMContentLoaded', async function() {
-            try {
-                // Initialize modals after DOM is loaded
-                pengembalianModal = new bootstrap.Modal(document.getElementById('pengembalianModal'));
-                confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-                invoiceModal = new bootstrap.Modal(document.getElementById('invoiceModal'));
-
-                // Set default dates
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('tanggalPinjam').value = today;
-                document.getElementById('modalTanggalKembali').value = today;
-                document.getElementById('filterDari').value = getFirstDayOfMonth();
-                document.getElementById('filterSampai').value = today;
-                
-                // Event listeners for due date calculation
-                document.getElementById('lamaPinjam').addEventListener('change', hitungJatuhTempo);
-                document.getElementById('tanggalPinjam').addEventListener('change', hitungJatuhTempo);
-                
-                // Character counter for notes
-                document.getElementById('catatan').addEventListener('input', function() {
-                    document.getElementById('charCount').textContent = this.value.length;
-                });
-                
-                // Setup other event listeners
-                setupEventListeners();
-                
-                // Load initial data
-                await Promise.all([
-                    loadBuku(),
-                    loadPeminjaman(),
-                    loadRiwayat()
-                ]);
-                
-                // Show welcome message
-                showAlert('info', 'Selamat datang di Sistem Peminjaman Buku Perpustakaan');
-            } catch (error) {
-                console.error("Initialization error:", error);
-                showAlert('error', 'Gagal memuat aplikasi: ' + error.message);
-            }
+            // ... rest of your initialization code ...
         });
-
+    
         // ====================== MAIN FUNCTIONS ======================
-        function setupEventListeners() {
-            // Form submission
-            document.getElementById('formPeminjaman').addEventListener('submit', function(e) {
-                e.preventDefault();
-                simpanPeminjaman();
-            });
-            
-            // Reset form
-            document.getElementById('btnReset').addEventListener('click', resetForm);
-
-            // Book search
-            document.getElementById('judulBuku').addEventListener('input', debounce(searchBukuSuggestions, 300));
-            document.getElementById('searchBuku').addEventListener('input', debounce(searchBuku, 300));
-
-            // Return functions
-            document.getElementById('searchPeminjaman').addEventListener('input', debounce(searchPeminjaman, 300));
-            document.getElementById('modalTanggalKembali').addEventListener('change', previewDenda);
-            document.getElementById('btnProsesPengembalian').addEventListener('click', prosesPengembalian);
-            document.getElementById('btnConfirmPayment').addEventListener('click', confirmPayment);
-
-            // History functions
-            document.getElementById('searchRiwayat').addEventListener('input', debounce(searchRiwayat, 300));
-            document.getElementById('btnFilter').addEventListener('click', () => loadRiwayat());
-            document.getElementById('btnPrev').addEventListener('click', prevPage);
-            document.getElementById('btnNext').addEventListener('click', nextPage);
-            
-            // Date validation
-            document.getElementById('tanggalPinjam').addEventListener('change', function() {
-                const today = new Date().toISOString().split('T')[0];
-                if (this.value < today) {
-                    this.setCustomValidity('Tanggal pinjam tidak boleh sebelum hari ini');
-                } else {
-                    this.setCustomValidity('');
-                }
-            });
+        // Now define all your functions including selectBook and showPengembalianModal
+        function selectBook(bookId) {
+            const book = bukuList.find(b => b.id === bookId);
+            if (!book) return;
+    
+            document.getElementById('bookId').value = book.id;
+            document.getElementById('judulBuku').value = book.judul;
+            document.getElementById('pengarang').value = book.pengarang;
+            document.getElementById('tahunTerbit').value = book.tahun_terbit;
+            document.getElementById('isbn').value = book.isbn || '';
+            document.getElementById('kategori').value = book.kategori;
+    
+            // Close suggestions if open
+            document.getElementById('bookSuggestions').style.display = 'none';
+        }
+    
+        function showPengembalianModal(loanId) {
+            currentInvoice = peminjamanList.find(loan => loan.id === loanId);
+            if (!currentInvoice) return;
+    
+            // Isi data modal
+            document.getElementById('modalJudulBuku').value = currentInvoice.judul_buku;
+            document.getElementById('modalPengarang').value = currentInvoice.pengarang;
+            document.getElementById('modalNamaPeminjam').value = currentInvoice.nama_peminjam;
+            document.getElementById('modalTanggalPinjam').value = formatDate(currentInvoice.tanggal_pinjam);
+            document.getElementById('modalJatuhTempo').value = formatDate(currentInvoice.jatuh_tempo);
+            document.getElementById('modalTanggalKembali').value = new Date().toISOString().split('T')[0];
+    
+            // Reset validation
+            document.getElementById('modalTanggalKembali').setCustomValidity('');
+    
+            // Hitung denda awal
+            previewDenda();
+            pengembalianModal.show();
         }
 
         // ====================== BOOK FUNCTIONS ======================
