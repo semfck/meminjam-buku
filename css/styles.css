@@ -399,3 +399,101 @@ body {
       margin-right: 1rem;
   }
 }
+
+/* Gaya Dasar */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+  color: #333;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Gaya Pencarian */
+.search-container {
+  position: relative;
+  margin-bottom: 30px;
+}
+
+#searchInput {
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+#searchInput:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.suggestions-dropdown {
+  position: absolute;
+  width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 0 0 4px 4px;
+  z-index: 1000;
+  display: none;
+}
+
+.suggestion-item {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.suggestion-item:hover {
+  background-color: #f1f1f1;
+}
+
+/* Gaya Daftar Buku */
+.book-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  padding: 15px;
+  margin-bottom: 20px;
+  transition: transform 0.3s;
+}
+
+.book-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.book-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #0d6efd;
+}
+
+.book-author {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.book-category {
+  display: inline-block;
+  background: #e9ecef;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  margin-top: 5px;
+}
+
+/* Responsif */
+@media (max-width: 768px) {
+  .book-card {
+      margin-bottom: 15px;
+  }
+  
+  #searchInput {
+      padding: 10px;
+  }
+}

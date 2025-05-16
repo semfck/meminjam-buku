@@ -40,6 +40,146 @@ async function loadInitialData() {
   await loadRiwayat();
 }
 
+// Data Buku Contoh (bisa diganti dengan API atau data dinamis)
+const books = [
+  { id: 1, title: "Laskar Pelangi", author: "Andrea Hirata", category: "Fiksi", available: true },
+  { id: 2, title: "Bumi Manusia", author: "Pramoedya Ananta Toer", category: "Sejarah", available: true },
+  { id: 3, title: "Harry Potter dan Batu Bertuah", author: "J.K. Rowling", category: "Fantasi", available: false },
+  { id: 4, title: "Pulang", author: "Tere Liye", category: "Fiksi", available: true },
+  { id: 5, title: "Negeri 5 Menara", author: "Ahmad Fuadi", category: "Inspirasi", available: true }
+];
+
+// Fungsi untuk memuat buku ke halaman
+function loadBooks(filteredBooks = books) {
+  const container = document.getElementById('booksContainer');
+  container.innerHTML = '';
+
+  if (filteredBooks.length === 0) {
+      container.innerHTML = '<div class="col-12 text-center py-5"><h4>Tidak ada buku yang ditemukan</h4></div>';
+      return;
+  }
+
+  filteredBooks.forEach(book => {
+      const bookCard = document.createElement('div');
+      bookCard.className = 'col-md-4 col-sm-6 mb-4';
+      bookCard.innerHTML = `
+          <div class="book-card">
+              <h3 class="book-title">${book.title}</h3>
+              <p class="book-author">Oleh: ${book.author}</p>
+              <span class="book-category">${book.category}</span>
+              <p class="mt-2">Status: ${book.available ? 
+                  '<span class="text-success">Tersedia</span>' : 
+                  '<span class="text-danger">Dipinjam</span>'}</p>
+              <button onclick="showBookDetail(${book.id})" class="btn btn-sm btn-outline-primary mt-2">
+                  Detail Buku
+              </button>
+          </div>
+      `;
+      container.appendChild(bookCard);
+  });
+}
+
+// Fungsi pencarian buku
+function searchBooks() {
+  const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+  
+  if (searchTerm.length < 2) {
+      document.getElementById('searchSuggestions').style.display = 'none';
+      loadBooks();
+      return;
+  }
+
+  const filteredBooks = books.filter(book => 
+      book.title.toLowerCase().includes(searchTerm) ||
+      book.author.toLowerCase().includes(searchTerm) ||
+      book.category.toLowerCase().includes(searchTerm)
+  );
+
+  loadBooks(filteredBooks);
+  showSuggestions(searchTerm);
+}
+
+// Fungsi untuk menampilkan saran pencarian
+function showSuggestions(searchTerm) {
+  const suggestionsContainer = document.getElementById('searchSuggestions');
+  suggestionsContainer.innerHTML = '';
+  
+  const uniqueSuggestions = new Set();
+  
+  books.forEach(book => {
+      if (book.title.toLowerCase().includes(searchTerm)) {
+          uniqueSuggestions.add(book.title);
+      }
+      if (book.author.toLowerCase().includes(searchTerm)) {
+          uniqueSuggestions.add(book.author);
+      }
+      if (book.category.toLowerCase().includes(searchTerm)) {
+          uniqueSuggestions.add(book.category);
+      }
+  });
+
+  if (uniqueSuggestions.size > 0) {
+      uniqueSuggestions.forEach(suggestion => {
+          const suggestionItem = document.createElement('div');
+          suggestionItem.className = 'suggestion-item';
+          suggestionItem.textContent = suggestion;
+          suggestionItem.addEventListener('click', () => {
+              document.getElementById('searchInput').value = suggestion;
+              searchBooks();
+              suggestionsContainer.style.display = 'none';
+          });
+          suggestionsContainer.appendChild(suggestionItem);
+      });
+      suggestionsContainer.style.display = 'block';
+  } else {
+      suggestionsContainer.style.display = 'none';
+  }
+}
+
+// Fungsi untuk menampilkan detail buku
+function showBookDetail(bookId) {
+  const book = books.find(b => b.id === bookId);
+  if (!book) return;
+
+  const modalTitle = document.getElementById('bookModalTitle');
+  const modalBody = document.getElementById('bookModalBody');
+  
+  modalTitle.textContent = book.title;
+  modalBody.innerHTML = `
+      <p><strong>Penulis:</strong> ${book.author}</p>
+      <p><strong>Kategori:</strong> ${book.category}</p>
+      <p><strong>Status:</strong> ${book.available ? 'Tersedia' : 'Sedang dipinjam'}</p>
+      <hr>
+      <button class="btn ${book.available ? 'btn-success' : 'btn-secondary'}" 
+              ${!book.available ? 'disabled' : ''}>
+          ${book.available ? 'Pinjam Buku' : 'Tidak Tersedia'}
+      </button>
+  `;
+
+  const modal = new bootstrap.Modal(document.getElementById('bookModal'));
+  modal.show();
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', () => {
+  loadBooks();
+  
+  document.getElementById('searchButton').addEventListener('click', searchBooks);
+  document.getElementById('searchInput').addEventListener('input', searchBooks);
+  
+  document.getElementById('searchInput').addEventListener('focus', function() {
+      if (this.value.length >= 2) {
+          showSuggestions(this.value.toLowerCase());
+      }
+  });
+  
+  document.addEventListener('click', (e) => {
+      if (!e.target.closest('.search-container')) {
+          document.getElementById('searchSuggestions').style.display = 'none';
+      }
+  });
+});
+
 // ====================== EVENT LISTENERS SETUP ======================
 function setupEventListeners() {
   // Peminjaman
