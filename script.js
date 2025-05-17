@@ -76,6 +76,38 @@ let currentInvoice = null;
 let currentPage = 1;
 let reportChart = null;
 
+// ====================== FORM FUNCTIONS ======================
+function resetForm() {
+    const form = document.getElementById('formPeminjaman');
+    form.reset();
+    form.classList.remove('was-validated');
+    document.getElementById('bookId').value = '';
+    document.getElementById('jatuhTempo').value = '';
+    document.getElementById('charCount').textContent = '0/200';
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('tanggalPinjam').value = today;
+}
+
+function hitungJatuhTempo() {
+    try {
+        const tglPinjam = document.getElementById('tanggalPinjam').value;
+        const lamaPinjam = parseInt(document.getElementById('lamaPinjam').value);
+        
+        if (tglPinjam && lamaPinjam) {
+            const tglPinjamObj = new Date(tglPinjam);
+            const tglTempo = new Date(tglPinjamObj);
+            tglTempo.setDate(tglPinjamObj.getDate() + (lamaPinjam * 7));
+            
+            document.getElementById('jatuhTempo').value = formatDate(tglTempo.toISOString().split('T')[0]);
+            return tglTempo.toISOString().split('T')[0];
+        }
+        return null;
+    } catch (error) {
+        console.error("Error calculating due date:", error);
+        return null;
+    }
+}
+
 // ====================== MAIN INITIALIZATION ======================
 document.addEventListener('DOMContentLoaded', async function() {
     // Inisialisasi komponen UI
@@ -100,94 +132,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.error("Error loading initial data:", error);
         showAlert('error', 'Gagal memuat data awal. Silakan refresh halaman.');
     }
-});
-
-// ====================== IMPROVED FIREBASE FUNCTIONS ======================
-async function loadPeminjaman() {
-    showLoading('Memuat data peminjaman...');
-    try {
-        // Coba ambil data dari server
-        const snapshot = await db.collection('peminjaman')
-            .where('tanggal_kembali', '==', null)
-            .orderBy('tanggal_pinjam', 'desc')
-            .get();
-        
-        peminjamanList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        updateTabelPengembalian();
-    } catch (error) {
-        console.error("Error loading loans:", error);
-        
-        // Fallback 1: Coba ambil dari cache
-        try {
-            const cached = await db.collection('peminjaman')
-                .where('tanggal_kembali', '==', null)
-                .orderBy('tanggal_pinjam', 'desc')
-                .get({ source: 'cache' });
-            
-            peminjamanList = cached.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            updateTabelPengembalian();
-            showAlert('warning', 'Menggunakan data offline');
-        } catch (cacheError) {
-            console.error("Cache error:", cacheError);
-            // Fallback 2: Gunakan array kosong
-            peminjamanList = [];
-            updateTabelPengembalian();
-            showAlert('error', 'Gagal memuat data peminjaman');
-        }
-    } finally {
-        hideLoading();
-    }
-}
-
-async function loadRiwayat() {
-    showLoading('Memuat riwayat...');
-    try {
-        let query = db.collection('peminjaman').orderBy('tanggal_pinjam', 'desc');
-
-        // Filter tanggal
-        const dari = document.getElementById('filterDari').value;
-        const sampai = document.getElementById('filterSampai').value;
-        if (dari && sampai) {
-            query = query.where('tanggal_pinjam', '>=', dari)
-                        .where('tanggal_pinjam', '<=', sampai);
-        }
-
-        const snapshot = await query.get();
-        riwayatList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        document.getElementById('totalData').textContent = riwayatList.length;
-        updateRiwayatTable();
-        updatePagination();
-    } catch (error) {
-        console.error("Error loading history:", error);
-        showAlert('error', 'Gagal memuat riwayat');
-    } finally {
-        hideLoading();
-    }
-}
-
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', async function() {
-    // Initialize Bootstrap components
-    let pengembalianModal = new bootstrap.Modal(document.getElementById('pengembalianModal'));
-    let confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-    let invoiceModal = new bootstrap.Modal(document.getElementById('invoiceModal'));
-    
-    // Set today as default date
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('tanggalPinjam').value = today;
-    document.getElementById('modalTanggalKembali').value = today;
-    
-    // Set first day of month as default filter
-    document.getElementById('filterDari').value = getFirstDayOfMonth();
-    document.getElementById('filterSampai').value = today;
-    
-    // Setup event listeners
-    setupEventListeners();
-    
-    // Load initial data
-    await loadPeminjaman();
-    await loadRiwayat();
 });
 
 function setupEventListeners() {
@@ -243,27 +187,41 @@ function setupEventListeners() {
     });
 }
 
-function selectBookFromTable(judul, pengarang, tahun, kategori, isbn) {
-    document.getElementById('bookId').value = 'book-' + Math.random().toString(36).substr(2, 9);
-    document.getElementById('judulBuku').value = judul;
-    document.getElementById('pengarang').value = pengarang;
-    document.getElementById('tahunTerbit').value = tahun;
-    document.getElementById('kategori').value = kategori;
-    document.getElementById('isbn').value = isbn;
-    
-    showAlert('success', `Buku "${judul}" telah dipilih`);
-}
-
-function showBookDetail(judul, pengarang, tahun, kategori, isbn, deskripsi) {
-    document.getElementById('detailJudul').textContent = judul;
-    document.getElementById('detailPengarang').textContent = pengarang;
-    document.getElementById('detailTahun').textContent = tahun;
-    document.getElementById('detailKategori').textContent = kategori;
-    document.getElementById('detailISBN').textContent = isbn;
-    document.getElementById('detailDeskripsi').textContent = deskripsi || '-';
-    
-    const modal = new bootstrap.Modal(document.getElementById('bookDetailModal'));
-    modal.show();
+// ====================== IMPROVED FIREBASE FUNCTIONS ======================
+async function loadPeminjaman() {
+    showLoading('Memuat data peminjaman...');
+    try {
+        // Coba ambil data dari server
+        const snapshot = await db.collection('peminjaman')
+            .where('tanggal_kembali', '==', null)
+            .orderBy('tanggal_pinjam', 'desc')
+            .get();
+        
+        peminjamanList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        updateTabelPengembalian();
+    } catch (error) {
+        console.error("Error loading loans:", error);
+        
+        // Fallback 1: Coba ambil dari cache
+        try {
+            const cached = await db.collection('peminjaman')
+                .where('tanggal_kembali', '==', null)
+                .orderBy('tanggal_pinjam', 'desc')
+                .get({ source: 'cache' });
+            
+            peminjamanList = cached.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            updateTabelPengembalian();
+            showAlert('warning', 'Menggunakan data offline');
+        } catch (cacheError) {
+            console.error("Cache error:", cacheError);
+            // Fallback 2: Gunakan array kosong
+            peminjamanList = [];
+            updateTabelPengembalian();
+            showAlert('error', 'Gagal memuat data peminjaman');
+        }
+    } finally {
+        hideLoading();
+    }
 }
 
 // ====================== VALIDATION FUNCTIONS ======================
@@ -780,3 +738,4 @@ function showAlert(type, message) {
 window.selectBookFromTable = selectBookFromTable;
 window.showPengembalianModal = showPengembalianModal;
 window.showBookDetail = showBookDetail;
+window.resetForm = resetForm;
