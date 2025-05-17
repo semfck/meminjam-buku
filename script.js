@@ -1,24 +1,83 @@
 import firebase from "firebase/compat/app";
-import "firebase/compat/analytics";
 import "firebase/compat/firestore";
 import "firebase/compat/auth";
+import "firebase/compat/analytics";
 
-// Konfigurasi Firebase
 const firebaseConfig = {
-    apiKey: "AIzaSyCCi8CdLNb1O6uEZBpVoeH_3mJhXElBGTU",
-    authDomain: "meminjam-buku.firebaseapp.com",
-    projectId: "meminjam-buku",
-    storageBucket: "meminjam-buku.appspot.com",
-    messagingSenderId: "517105835463",
-    appId: "1:517105835463:web:90dcc1dfa5d2ffc6e38de2",
-    measurementId: "G-KK3XQDMD9G"
+  apiKey: "AIzaSyCCi8CdLNb1O6uEZBpVoeH_3mJhXElBGTU",
+  authDomain: "meminjam-buku.firebaseapp.com",
+  projectId: "meminjam-buku",
+  storageBucket: "meminjam-buku.appspot.com",
+  messagingSenderId: "517105835463",
+  appId: "1:517105835463:web:90dcc1dfa5d2ffc6e38de2",
+  measurementId: "G-KK3XQDMD9G"
 };
 
-// Inisialisasi Firebase
+// Initialize Firebase
 const app = firebase.initializeApp(firebaseConfig);
-const analytics = firebase.analytics();
 const db = firebase.firestore();
 const auth = firebase.auth();
+let analytics;
+
+try {
+  analytics = firebase.analytics();
+  analytics.logEvent('init_success');
+} catch (error) {
+  console.warn("Google Analytics initialization failed:", error);
+}
+
+// Fungsi aman untuk log event
+function logEvent(eventName, params = {}) {
+  try {
+    if (analytics) {
+      analytics.logEvent(eventName, params);
+    }
+  } catch (error) {
+    console.warn("Failed to log event:", error);
+  }
+}
+
+// Fungsi untuk memuat data dengan error handling
+async function loadDataWithFallback() {
+  try {
+    // Coba query utama dulu
+    const querySnapshot = await db.collection("peminjaman")
+      .where("status", "in", ["dikembalikan", "terlambat"])
+      .orderBy("tanggalPinjam", "desc")
+      .get();
+    return querySnapshot.docs;
+  } catch (error) {
+    if (error.code === 'failed-precondition') {
+      // Fallback ke query terpisah
+      const [returned, late] = await Promise.all([
+        db.collection("peminjaman")
+          .where("status", "==", "dikembalikan")
+          .orderBy("tanggalPinjam", "desc")
+          .get(),
+        db.collection("peminjaman")
+          .where("status", "==", "terlambat")
+          .orderBy("tanggalPinjam", "desc")
+          .get()
+      ]);
+      return [...returned.docs, ...late.docs]
+        .sort((a, b) => b.data().tanggalPinjam - a.data().tanggalPinjam);
+    }
+    throw error;
+  }
+}
+
+// Event listener untuk tombol
+document.getElementById('btnLoadData').addEventListener('click', async () => {
+  try {
+    const loans = await loadDataWithFallback();
+    // Proses data...
+    logEvent('data_loaded', { count: loans.length });
+  } catch (error) {
+    console.error("Error:", error);
+    showAlert('error', 'Gagal memuat data');
+    logEvent('load_error', { error: error.message });
+  }
+});
 
 // Fungsi untuk menampilkan alert
 function showAlert(type, message) {
