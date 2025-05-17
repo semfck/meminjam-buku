@@ -925,7 +925,9 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                <button type="button" class="btn btn-primary" onclick="selectBookFromDetail()">Pinjam Buku Ini</button>
+                <button type="button" class="btn btn-primary" id="btnBorrowFromDetail">
+                    <i class="fas fa-hand-holding me-1"></i>Pinjam Buku Ini
+                </button>
             </div>
         </div>
     </div>
@@ -1057,10 +1059,9 @@
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" nonce="randomNonceValue"></script>
     
-    <!-- Main Application Script -->
     <script nonce="randomNonceValue">
         // ====================== GLOBAL CONSTANTS ======================
-        const DENDA_PER_HARI = 5000; // Rp 5,000 per day late
+        const DENDA_PER_HARI = 5000;
         const ITEMS_PER_PAGE = 10;
         const SUPABASE_URL = 'https://xqnlchcbxekwulncjvfy.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxbmxjaGNieGVrd3VsbmNqdmZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNzcxNzksImV4cCI6MjA2Mjg1MzE3OX0.j8nyrPIp64bJL_WziUE8ceSvwrSU0C8VHTd4-qGl8D4';
@@ -1074,15 +1075,101 @@
         let reportChart = null;
     
         // Initialize Supabase client
-        const _supabase = window.supabase;
-        const supabase = _supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
         // Initialize Bootstrap components
         let pengembalianModal, confirmModal, invoiceModal;
     
-        // ====================== GLOBAL FUNCTIONS FOR HTML EVENT HANDLERS ======================
-        window.selectBook = selectBook;
-        window.showPengembalianModal = showPengembalianModal;
+        // ====================== HELPER FUNCTIONS ======================
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const options = { day: '2-digit', month: 'long', year: 'numeric' };
+            return new Date(dateString).toLocaleDateString('id-ID', options);
+        }
+    
+        function formatRupiah(amount) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(amount || 0);
+        }
+    
+        function getFirstDayOfMonth() {
+            const date = new Date();
+            return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+        }
+    
+        function debounce(func, timeout = 300) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => func.apply(this, args), timeout);
+            };
+        }
+    
+        function showLoading(message = 'Memproses...') {
+            document.getElementById('loadingText').textContent = message;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+    
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+    
+        function showAlert(type, message) {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} animate__animated animate__fadeInRight`;
+            alert.role = 'alert';
+            alert.innerHTML = `
+                <i class="fas fa-${type === 'error' ? 'times-circle' : type === 'info' ? 'info-circle' : 'check-circle'} me-2"></i>
+                ${message}
+            `;
+            document.getElementById('alertContainer').appendChild(alert);
+            setTimeout(() => alert.remove(), 5000);
+        }
+    
+        function resetForm() {
+            document.getElementById('formPeminjaman').reset();
+            document.getElementById('formPeminjaman').classList.remove('was-validated');
+            document.getElementById('bookId').value = '';
+            document.getElementById('jatuhTempo').value = '';
+            document.getElementById('charCount').textContent = '0/200';
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('tanggalPinjam').value = today;
+            document.getElementById('bookSuggestions').style.display = 'none';
+        }
+    
+        // ====================== MAIN FUNCTIONS ======================
+        function selectBook(bookId) {
+            const book = bukuList.find(b => b.id === bookId);
+            if (!book) return;
+    
+            document.getElementById('bookId').value = book.id;
+            document.getElementById('judulBuku').value = book.judul;
+            document.getElementById('pengarang').value = book.pengarang;
+            document.getElementById('tahunTerbit').value = book.tahun_terbit;
+            document.getElementById('isbn').value = book.isbn || '';
+            document.getElementById('kategori').value = book.kategori;
+    
+            document.getElementById('bookSuggestions').style.display = 'none';
+        }
+    
+        function showPengembalianModal(loanId) {
+            currentInvoice = peminjamanList.find(loan => loan.id === loanId);
+            if (!currentInvoice) return;
+    
+            document.getElementById('modalJudulBuku').value = currentInvoice.judul_buku;
+            document.getElementById('modalPengarang').value = currentInvoice.pengarang;
+            document.getElementById('modalNamaPeminjam').value = currentInvoice.nama_peminjam;
+            document.getElementById('modalTanggalPinjam').value = formatDate(currentInvoice.tanggal_pinjam);
+            document.getElementById('modalJatuhTempo').value = formatDate(currentInvoice.jatuh_tempo);
+            document.getElementById('modalTanggalKembali').value = new Date().toISOString().split('T')[0];
+    
+            document.getElementById('modalTanggalKembali').setCustomValidity('');
+            previewDenda();
+            pengembalianModal.show();
+        }
     
         // ====================== INITIALIZATION ======================
         document.addEventListener('DOMContentLoaded', async function() {
@@ -1149,6 +1236,28 @@
                 window.print();
             });
             
+            // Book detail modal borrow button
+            document.getElementById('btnBorrowFromDetail').addEventListener('click', function() {
+                const book = {
+                    id: 'detail-' + Math.random().toString(36).substr(2, 9),
+                    judul: document.getElementById('detailJudul').textContent,
+                    pengarang: document.getElementById('detailPengarang').textContent,
+                    tahun: document.getElementById('detailTahun').textContent,
+                    kategori: document.getElementById('detailKategori').textContent,
+                    isbn: document.getElementById('detailISBN').textContent || 'ISBN-' + Math.random().toString(36).substr(2, 8).toUpperCase()
+                };
+                
+                document.getElementById('bookId').value = book.id;
+                document.getElementById('judulBuku').value = book.judul;
+                document.getElementById('pengarang').value = book.pengarang;
+                document.getElementById('tahunTerbit').value = book.tahun;
+                document.getElementById('kategori').value = book.kategori;
+                document.getElementById('isbn').value = book.isbn;
+                
+                bootstrap.Modal.getInstance(document.getElementById('bookDetailModal')).hide();
+                showAlert('success', `Buku "${book.judul}" telah dipilih`);
+            });
+            
             // Close suggestions when clicking outside
             document.addEventListener('click', function(e) {
                 if (!e.target.closest('.search-container')) {
@@ -1156,6 +1265,12 @@
                 }
             });
         }
+    
+        // Make functions available globally for HTML event handlers
+        window.selectBook = selectBook;
+        window.showPengembalianModal = showPengembalianModal;
+        window.selectBookFromTable = selectBookFromTable;
+        window.showBookDetail = showBookDetail;
 
         // ====================== VALIDATION FUNCTIONS ======================
         function validateReturnDate() {
