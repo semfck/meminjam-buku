@@ -1,4 +1,8 @@
-// Konfigurasi Firebase
+import firebase from "firebase/compat/app";
+import "firebase/compat/analytics";
+import "firebase/compat/firestore";
+import "firebase/compat/auth";
+
 const firebaseConfig = {
     apiKey: "AIzaSyCCi8CdLNb1O6uEZBpVoeH_3mJhXElBGTU",
     authDomain: "meminjam-buku.firebaseapp.com",
@@ -9,7 +13,7 @@ const firebaseConfig = {
     measurementId: "G-KK3XQDMD9G"
 };
 
-// Inisialisasi Firebase
+// Initialize Firebase
 const app = firebase.initializeApp(firebaseConfig);
 const analytics = firebase.analytics();
 const db = firebase.firestore();
