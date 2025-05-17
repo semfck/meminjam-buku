@@ -148,7 +148,12 @@ async function loadPeminjaman() {
         const snapshot = await db.collection('peminjaman')
             .where('tanggal_kembali', '==', null)
             .orderBy('tanggal_pinjam', 'desc')
-            .get();
+            .get()
+            .catch(error => {
+                console.error("Firestore error:", error);
+                showAlert('error', 'Gagal terhubung ke database. Cek koneksi internet Anda.');
+                return { docs: [] };
+            });
 
         peminjamanList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         updateTabelPengembalian();
