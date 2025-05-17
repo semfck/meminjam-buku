@@ -1,3 +1,6 @@
+// Import (if using modules)
+import { createClient } from '@supabase/supabase-js';
+
 // ====================== GLOBAL CONSTANTS ======================
 const DENDA_PER_HARI = 5000; // Rp 5,000 per day late
 const ITEMS_PER_PAGE = 10;
