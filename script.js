@@ -86,26 +86,44 @@ async function loadActiveLoans() {
 // Fungsi untuk memuat riwayat peminjaman
 async function loadLoanHistory() {
     try {
-        // Option A: Split into two queries and combine results
-        const returned = await db.collection("peminjaman")
-            .where("status", "==", "dikembalikan")
-            .orderBy("tanggalPinjam", "desc")
-            .get();
-            
-        const late = await db.collection("peminjaman")
-            .where("status", "==", "terlambat")
-            .orderBy("tanggalPinjam", "desc")
-            .get();
-            
-        // Combine and sort all results
-        const allLoans = [...returned.docs, ...late.docs].sort((a, b) => 
-            new Date(b.data().tanggalPinjam) - new Date(a.data().tanggalPinjam)
-        );
+        // Show loading state
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        document.getElementById('loadingText').textContent = 'Memuat riwayat...';
         
+        // Try the composite query first
+        let querySnapshot;
+        try {
+            querySnapshot = await db.collection("peminjaman")
+                .where("status", "in", ["dikembalikan", "terlambat"])
+                .orderBy("tanggalPinjam", "desc")
+                .get();
+        } catch (error) {
+            if (error.code === 'failed-precondition') {
+                // Fallback to separate queries if index doesn't exist
+                const [returned, late] = await Promise.all([
+                    db.collection("peminjaman")
+                        .where("status", "==", "dikembalikan")
+                        .orderBy("tanggalPinjam", "desc")
+                        .get(),
+                    db.collection("peminjaman")
+                        .where("status", "==", "terlambat")
+                        .orderBy("tanggalPinjam", "desc")
+                        .get()
+                ]);
+                querySnapshot = {
+                    docs: [...returned.docs, ...late.docs].sort((a, b) => 
+                        new Date(b.data().tanggalPinjam) - new Date(a.data().tanggalPinjam)
+                    )
+                };
+            } else {
+                throw error;
+            }
+        }
+
         const riwayatBody = document.getElementById('riwayatBody');
         riwayatBody.innerHTML = '';
         
-        allLoans.forEach((doc, index) => {
+        querySnapshot.docs.forEach((doc, index) => {
             const data = doc.data();
             const statusBadge = data.status === 'dikembalikan' ? 
                 '<span class="badge bg-success">Dikembalikan</span>' : 
@@ -125,10 +143,20 @@ async function loadLoanHistory() {
             `;
             riwayatBody.innerHTML += row;
         });
-        
+
     } catch (error) {
-        console.error("Error loading loan history: ", error);
+        console.error("Error loading loan history:", error);
         showAlert('error', 'Gagal memuat riwayat peminjaman');
+        
+        // Provide link to create index if that's the error
+        if (error.code === 'failed-precondition') {
+            const indexUrl = error.message.match(/https:\/\/[^ ]+/)?.[0];
+            if (indexUrl) {
+                showAlert('info', `Query memerlukan index. <a href="${indexUrl}" target="_blank">Buat index di sini</a>`);
+            }
+        }
+    } finally {
+        document.getElementById('loadingOverlay').style.display = 'none';
     }
 }
 
