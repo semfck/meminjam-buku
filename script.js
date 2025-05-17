@@ -13,29 +13,158 @@ const firebaseConfig = {
     measurementId: "G-KK3XQDMD9G"
 };
 
-// Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+// ====================== INITIALIZATION ======================
+// Tambahkan favicon secara dinamis sebelum inisialisasi Firebase
+const addDynamicFavicon = () => {
+    const link = document.createElement('link');
+    link.rel = 'icon';
+    link.href = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📚</text></svg>';
+    document.head.appendChild(link);
+};
 
-// Tambahkan favicon secara programatik untuk menghindari 404
-document.addEventListener('DOMContentLoaded', function() {
-    // Cek jika favicon sudah ada
-    if (!document.querySelector("link[rel*='icon']")) {
-        const link = document.createElement('link');
-        link.rel = 'icon';
-        link.href = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>';
-        link.type = 'image/svg+xml';
-        document.getElementsByTagName('head')[0].appendChild(link);
-    }
-});
+addDynamicFavicon();
 
-// Global variables
+// Inisialisasi Firebase dengan error handling
+let app, db;
+
+try {
+    app = firebase.initializeApp(firebaseConfig);
+    
+    // Konfigurasi Firestore untuk kompatibilitas browser modern
+    const settings = {
+        experimentalForceLongPolling: true, // Untuk mengatasi masalah WebChannel
+        merge: true
+    };
+    
+    db = firebase.firestore();
+    db.settings(settings);
+    
+    // Aktifkan persistence dengan error handling
+    firebase.firestore().enablePersistence()
+        .catch((err) => {
+            if (err.code === 'failed-precondition') {
+                console.warn("Persistence hanya bisa diaktifkan di satu tab saja");
+            } else if (err.code === 'unimplemented') {
+                console.warn("Browser ini tidak mendukung semua fitur persistence");
+            }
+        });
+} catch (error) {
+    console.error("Error inisialisasi Firebase:", error);
+    // Fallback jika Firebase gagal diinisialisasi
+    db = {
+        collection: () => ({
+            where: () => ({
+                orderBy: () => ({
+                    get: () => Promise.resolve({ docs: [] })
+                })
+            }),
+            doc: () => ({
+                update: () => Promise.resolve(),
+                get: () => Promise.resolve({ exists: false })
+            }),
+            add: () => Promise.resolve({ id: 'offline-' + Date.now() })
+        })
+    };
+    showAlert('warning', 'Aplikasi berjalan dalam mode offline terbatas');
+}
+
+// ====================== GLOBAL VARIABLES ======================
 let bukuList = [];
 let peminjamanList = [];
 let riwayatList = [];
 let currentInvoice = null;
 let currentPage = 1;
 let reportChart = null;
+
+// ====================== MAIN INITIALIZATION ======================
+document.addEventListener('DOMContentLoaded', async function() {
+    // Inisialisasi komponen UI
+    const pengembalianModal = new bootstrap.Modal(document.getElementById('pengembalianModal'));
+    const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    const invoiceModal = new bootstrap.Modal(document.getElementById('invoiceModal'));
+    
+    // Set tanggal default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('tanggalPinjam').value = today;
+    document.getElementById('modalTanggalKembali').value = today;
+    document.getElementById('filterDari').value = getFirstDayOfMonth();
+    document.getElementById('filterSampai').value = today;
+    
+    // Setup event listeners
+    setupEventListeners();
+    
+    // Load data awal dengan error handling
+    try {
+        await Promise.all([loadPeminjaman(), loadRiwayat()]);
+    } catch (error) {
+        console.error("Error loading initial data:", error);
+        showAlert('error', 'Gagal memuat data awal. Silakan refresh halaman.');
+    }
+});
+
+// ====================== IMPROVED FIREBASE FUNCTIONS ======================
+async function loadPeminjaman() {
+    showLoading('Memuat data peminjaman...');
+    try {
+        // Coba ambil data dari server
+        const snapshot = await db.collection('peminjaman')
+            .where('tanggal_kembali', '==', null)
+            .orderBy('tanggal_pinjam', 'desc')
+            .get();
+        
+        peminjamanList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        updateTabelPengembalian();
+    } catch (error) {
+        console.error("Error loading loans:", error);
+        
+        // Fallback 1: Coba ambil dari cache
+        try {
+            const cached = await db.collection('peminjaman')
+                .where('tanggal_kembali', '==', null)
+                .orderBy('tanggal_pinjam', 'desc')
+                .get({ source: 'cache' });
+            
+            peminjamanList = cached.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            updateTabelPengembalian();
+            showAlert('warning', 'Menggunakan data offline');
+        } catch (cacheError) {
+            console.error("Cache error:", cacheError);
+            // Fallback 2: Gunakan array kosong
+            peminjamanList = [];
+            updateTabelPengembalian();
+            showAlert('error', 'Gagal memuat data peminjaman');
+        }
+    } finally {
+        hideLoading();
+    }
+}
+
+async function loadRiwayat() {
+    showLoading('Memuat riwayat...');
+    try {
+        let query = db.collection('peminjaman').orderBy('tanggal_pinjam', 'desc');
+
+        // Filter tanggal
+        const dari = document.getElementById('filterDari').value;
+        const sampai = document.getElementById('filterSampai').value;
+        if (dari && sampai) {
+            query = query.where('tanggal_pinjam', '>=', dari)
+                        .where('tanggal_pinjam', '<=', sampai);
+        }
+
+        const snapshot = await query.get();
+        riwayatList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        document.getElementById('totalData').textContent = riwayatList.length;
+        updateRiwayatTable();
+        updatePagination();
+    } catch (error) {
+        console.error("Error loading history:", error);
+        showAlert('error', 'Gagal memuat riwayat');
+    } finally {
+        hideLoading();
+    }
+}
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', async function() {
@@ -633,33 +762,6 @@ function formatRupiah(amount) {
 function getFirstDayOfMonth() {
     const date = new Date();
     return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
-}
-
-function debounce(func, timeout = 300) {
-    let timer;
-    return (...args) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => func.apply(this, args), timeout);
-    };
-}
-
-function resetForm() {
-    document.getElementById('formPeminjaman').reset();
-    document.getElementById('formPeminjaman').classList.remove('was-validated');
-    document.getElementById('bookId').value = '';
-    document.getElementById('jatuhTempo').value = '';
-    document.getElementById('charCount').textContent = '0/200';
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('tanggalPinjam').value = today;
-}
-
-function showLoading(message = 'Memproses...') {
-    document.getElementById('loadingText').textContent = message;
-    document.getElementById('loadingOverlay').style.display = 'flex';
-}
-
-function hideLoading() {
-    document.getElementById('loadingOverlay').style.display = 'none';
 }
 
 function showAlert(type, message) {
