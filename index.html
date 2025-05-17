@@ -11,23 +11,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Animate.css -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-    
     <style>
-        :root {
-            --primary-color: #4361ee;
-            --secondary-color: #3f37c9;
-            --success-color: #4cc9f0;
-            --warning-color: #f8961e;
-            --danger-color: #f72585;
-        }
-        
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
         /* Loading Overlay */
         #loadingOverlay {
             position: fixed;
@@ -35,168 +19,50 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(255,255,255,0.9);
+            background-color: rgba(255,255,255,0.8);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 9999;
-            transition: opacity 0.3s ease;
         }
         
-        .spinner-border {
-            width: 3rem;
-            height: 3rem;
-            border-width: 0.25em;
-            color: var(--primary-color);
-        }
-        
-        /* Navbar */
-        .navbar {
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .navbar-brand {
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-        
-        .nav-link {
-            font-weight: 500;
-            position: relative;
-        }
-        
-        .nav-link.active {
-            color: var(--primary-color);
-        }
-        
-        .nav-link.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background-color: var(--primary-color);
-            border-radius: 3px 3px 0 0;
-        }
-        
-        /* Cards */
+        /* Perbaikan tampilan card */
         .card {
             margin-bottom: 20px;
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
         }
         
         .card-header {
             font-weight: 600;
-            background-color: white;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            border-radius: 10px 10px 0 0 !important;
+            background-color: #f8f9fa;
         }
         
-        /* Tables */
+        /* Perbaikan tabel */
         .table-responsive {
             overflow-x: auto;
-            border-radius: 10px;
         }
         
         table {
             width: 100%;
-            margin-bottom: 0;
         }
         
         th {
             white-space: nowrap;
-            background-color: #f8f9fa;
-            font-weight: 600;
         }
         
-        .table-hover tbody tr:hover {
-            background-color: rgba(67, 97, 238, 0.05);
-        }
-        
-        /* Forms */
+        /* Perbaikan form */
         .form-control:read-only {
             background-color: #f8f9fa;
         }
         
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
-        }
-        
-        .form-select:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
-        }
-        
-        /* Buttons */
-        .btn {
-            font-weight: 500;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-        }
-        
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        
-        .btn-primary:hover {
-            background-color: var(--secondary-color);
-            border-color: var(--secondary-color);
-        }
-        
+        /* Perbaikan tombol */
         .btn-sm {
-            padding: 0.25rem 0.75rem;
+            padding: 0.25rem 0.5rem;
             font-size: 0.875rem;
         }
         
-        /* Badges */
-        .badge {
-            font-weight: 500;
-            padding: 0.35em 0.65em;
-        }
-        
-        /* Alerts */
-        #alertContainer {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            max-width: 350px;
-        }
-        
-        .alert {
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            border: none;
-        }
-        
-        /* Modal */
-        .modal-content {
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-        
-        /* Character counter */
-        #charCount {
-            font-weight: 600;
-        }
-        
-        .text-danger {
-            color: var(--danger-color) !important;
-        }
-        
-        /* Responsive adjustments */
+        /* Perbaikan responsif */
         @media (max-width: 768px) {
             .navbar-brand {
                 font-size: 1rem;
@@ -208,12 +74,6 @@
             
             .card-body {
                 padding: 1rem;
-            }
-            
-            #alertContainer {
-                max-width: 100%;
-                left: 20px;
-                right: 20px;
             }
         }
     </style>
@@ -232,11 +92,11 @@
 
     <div class="container mt-3 mb-5">
         <!-- Header -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 rounded-3 shadow-sm">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 rounded shadow-sm">
             <div class="container-fluid">
                 <a class="navbar-brand" href="#">
                     <i class="fas fa-book-open me-2"></i>
-                    <span>Sistem Peminjaman Buku</span>
+                    Sistem Peminjaman Buku
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span class="navbar-toggler-icon"></span>
@@ -331,7 +191,7 @@
                                 </div>
                                 <div class="col-12">
                                     <label for="catatan" class="form-label">Catatan</label>
-                                    <textarea class="form-control" id="catatan" rows="3" maxlength="200" placeholder="Opsional"></textarea>
+                                    <textarea class="form-control" id="catatan" rows="3" maxlength="200"></textarea>
                                     <small class="text-muted"><span id="charCount">0</span>/200 karakter</small>
                                 </div>
                             </div>
@@ -339,7 +199,7 @@
                                 <button type="submit" id="btnSimpan" class="btn btn-primary px-4">
                                     <i class="fas fa-save me-2"></i>Simpan Peminjaman
                                 </button>
-                                <button type="button" id="btnReset" class="btn btn-outline-secondary px-4 ms-2">
+                                <button type="button" id="btnReset" class="btn btn-secondary px-4 ms-2">
                                     <i class="fas fa-undo me-2"></i>Reset Form
                                 </button>
                             </div>
@@ -349,12 +209,8 @@
                 
                 <!-- Daftar Buku Tersedia -->
                 <div class="card mt-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-book me-2"></i>Daftar Buku Tersedia</span>
-                        <div class="input-group" style="width: 300px;">
-                            <span class="input-group-text"><i class="fas fa-search"></i></span>
-                            <input type="search" class="form-control form-control-sm" placeholder="Cari buku..." id="searchBuku">
-                        </div>
+                    <div class="card-header">
+                        <i class="fas fa-book me-2"></i>Daftar Buku Tersedia
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -368,8 +224,158 @@
                                         <th width="15%">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody id="bukuBody">
-                                    <!-- Data buku akan diisi oleh JavaScript -->
+                                <tbody>
+                                    <!-- Kategori Fiksi -->
+                                    <tr>
+                                        <td>Laskar Pelangi</td>
+                                        <td>Andrea Hirata</td>
+                                        <td>2005</td>
+                                        <td>979-3062-79-7</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="Laskar Pelangi" data-pengarang="Andrea Hirata" data-tahun="2005" data-kategori="Fiksi" data-isbn="979-3062-79-7">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Bumi Manusia</td>
+                                        <td>Pramoedya Ananta Toer</td>
+                                        <td>1980</td>
+                                        <td>979-8659-17-6</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="Bumi Manusia" data-pengarang="Pramoedya Ananta Toer" data-tahun="1980" data-kategori="Fiksi" data-isbn="979-8659-17-6">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Perahu Kertas</td>
+                                        <td>Dee Lestari</td>
+                                        <td>2009</td>
+                                        <td>978-979-22-4861-6</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="Perahu Kertas" data-pengarang="Dee Lestari" data-tahun="2009" data-kategori="Fiksi" data-isbn="978-979-22-4861-6">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Pulang</td>
+                                        <td>Tere Liye</td>
+                                        <td>2015</td>
+                                        <td>978-602-03-1251-5</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="Pulang" data-pengarang="Tere Liye" data-tahun="2015" data-kategori="Fiksi" data-isbn="978-602-03-1251-5">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
+                                    
+                                    <!-- Kategori Non-Fiksi -->
+                                    <tr>
+                                        <td>Filosofi Teras</td>
+                                        <td>Henry Manampiring</td>
+                                        <td>2018</td>
+                                        <td>978-602-424-698-5</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="Filosofi Teras" data-pengarang="Henry Manampiring" data-tahun="2018" data-kategori="Non-Fiksi" data-isbn="978-602-424-698-5">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Atomic Habits</td>
+                                        <td>James Clear</td>
+                                        <td>2018</td>
+                                        <td>978-0735211292</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="Atomic Habits" data-pengarang="James Clear" data-tahun="2018" data-kategori="Non-Fiksi" data-isbn="978-0735211292">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Seni Hidup Minimalis</td>
+                                        <td>Francine Jay</td>
+                                        <td>2010</td>
+                                        <td>978-0061715015</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="Seni Hidup Minimalis" data-pengarang="Francine Jay" data-tahun="2010" data-kategori="Non-Fiksi" data-isbn="978-0061715015">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Mindset: The New Psychology of Success</td>
+                                        <td>Carol S. Dweck</td>
+                                        <td>2006</td>
+                                        <td>978-0345472328</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="Mindset: The New Psychology of Success" data-pengarang="Carol S. Dweck" data-tahun="2006" data-kategori="Non-Fiksi" data-isbn="978-0345472328">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
+                                    
+                                    <!-- Kategori Teknologi -->
+                                    <tr>
+                                        <td>Clean Code</td>
+                                        <td>Robert C. Martin</td>
+                                        <td>2008</td>
+                                        <td>978-0132350884</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="Clean Code" data-pengarang="Robert C. Martin" data-tahun="2008" data-kategori="Teknologi" data-isbn="978-0132350884">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>The Pragmatic Programmer</td>
+                                        <td>Andrew Hunt, David Thomas</td>
+                                        <td>1999</td>
+                                        <td>978-0201616224</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="The Pragmatic Programmer" data-pengarang="Andrew Hunt, David Thomas" data-tahun="1999" data-kategori="Teknologi" data-isbn="978-0201616224">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Designing Data-Intensive Applications</td>
+                                        <td>Martin Kleppmann</td>
+                                        <td>2017</td>
+                                        <td>978-1449373320</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="Designing Data-Intensive Applications" data-pengarang="Martin Kleppmann" data-tahun="2017" data-kategori="Teknologi" data-isbn="978-1449373320">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Artificial Intelligence: A Modern Approach</td>
+                                        <td>Stuart Russell, Peter Norvig</td>
+                                        <td>2020</td>
+                                        <td>978-0134610993</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="Artificial Intelligence: A Modern Approach" data-pengarang="Stuart Russell, Peter Norvig" data-tahun="2020" data-kategori="Teknologi" data-isbn="978-0134610993">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
+                                    
+                                    <!-- Kategori Sejarah -->
+                                    <tr>
+                                        <td>Sapiens: Riwayat Singkat Umat Manusia</td>
+                                        <td>Yuval Noah Harari</td>
+                                        <td>2011</td>
+                                        <td>978-0062316097</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="Sapiens: Riwayat Singkat Umat Manusia" data-pengarang="Yuval Noah Harari" data-tahun="2011" data-kategori="Sejarah" data-isbn="978-0062316097">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Sejarah Dunia yang Disembunyikan</td>
+                                        <td>Jonathan Black</td>
+                                        <td>2007</td>
+                                        <td>978-1846041811</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="Sejarah Dunia yang Disembunyikan" data-pengarang="Jonathan Black" data-tahun="2007" data-kategori="Sejarah" data-isbn="978-1846041811">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Sejarah Indonesia Modern</td>
+                                        <td>M.C. Ricklefs</td>
+                                        <td>1981</td>
+                                        <td>978-979-421-904-5</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="Sejarah Indonesia Modern" data-pengarang="M.C. Ricklefs" data-tahun="1981" data-kategori="Sejarah" data-isbn="978-979-421-904-5">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Guns, Germs, and Steel</td>
+                                        <td>Jared Diamond</td>
+                                        <td>1997</td>
+                                        <td>978-0393317558</td>
+                                        <td><button class="btn btn-primary btn-sm btn-pinjam" data-judul="Guns, Germs, and Steel" data-pengarang="Jared Diamond" data-tahun="1997" data-kategori="Sejarah" data-isbn="978-0393317558">
+                                            <i class="fas fa-hand-holding me-1"></i>Pinjam
+                                        </button></td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -382,9 +388,8 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span><i class="fas fa-undo me-2"></i>Daftar Peminjaman Aktif</span>
-                        <div class="input-group" style="width: 300px;">
-                            <span class="input-group-text"><i class="fas fa-search"></i></span>
-                            <input type="search" id="searchPeminjaman" class="form-control form-control-sm" placeholder="Cari peminjaman...">
+                        <div>
+                            <input type="search" id="searchPeminjaman" class="form-control form-control-sm" placeholder="Cari...">
                         </div>
                     </div>
                     <div class="card-body">
@@ -403,7 +408,27 @@
                                     </tr>
                                 </thead>
                                 <tbody id="pengembalianBody">
-                                    <!-- Data akan diisi oleh JavaScript -->
+                                    <!-- Data contoh untuk demo -->
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Laskar Pelangi</td>
+                                        <td>Andrea Hirata</td>
+                                        <td>John Doe</td>
+                                        <td>2023-06-01</td>
+                                        <td>2023-06-15</td>
+                                        <td><span class="badge bg-success">Aktif</span></td>
+                                        <td><button class="btn btn-warning btn-sm btn-kembalikan">Kembalikan</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Bumi Manusia</td>
+                                        <td>Pramoedya Ananta Toer</td>
+                                        <td>Jane Smith</td>
+                                        <td>2023-06-05</td>
+                                        <td>2023-06-19</td>
+                                        <td><span class="badge bg-success">Aktif</span></td>
+                                        <td><button class="btn btn-warning btn-sm btn-kembalikan">Kembalikan</button></td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -414,15 +439,8 @@
             <!-- Riwayat Tab -->
             <div class="tab-pane fade" id="riwayat-tab">
                 <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-history me-2"></i>Riwayat Peminjaman</span>
-                        <div class="d-flex align-items-center">
-                            <span class="me-3 text-muted small" id="totalData">0 data</span>
-                            <div class="input-group" style="width: 300px;">
-                                <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                <input type="search" class="form-control form-control-sm" id="searchRiwayat" placeholder="Cari riwayat...">
-                            </div>
-                        </div>
+                    <div class="card-header">
+                        <i class="fas fa-history me-2"></i>Riwayat Peminjaman
                     </div>
                     <div class="card-body">
                         <div class="row mb-3">
@@ -433,6 +451,10 @@
                             <div class="col-md-3">
                                 <label for="filterSampai" class="form-label">Sampai Tanggal</label>
                                 <input type="date" class="form-control" id="filterSampai">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="searchRiwayat" class="form-label">Pencarian</label>
+                                <input type="search" class="form-control" id="searchRiwayat" placeholder="Cari nama, judul buku, atau kode...">
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
                                 <button id="btnFilter" class="btn btn-primary w-100">
@@ -456,17 +478,30 @@
                                     </tr>
                                 </thead>
                                 <tbody id="riwayatBody">
-                                    <!-- Data akan diisi oleh JavaScript -->
+                                    <!-- Data contoh untuk demo -->
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Filosofi Teras</td>
+                                        <td>Henry Manampiring</td>
+                                        <td>Michael Brown</td>
+                                        <td>2023-05-10</td>
+                                        <td>2023-05-24</td>
+                                        <td>2023-05-22</td>
+                                        <td><span class="badge bg-success">Dikembalikan</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Clean Code</td>
+                                        <td>Robert C. Martin</td>
+                                        <td>Sarah Johnson</td>
+                                        <td>2023-05-15</td>
+                                        <td>2023-05-29</td>
+                                        <td>2023-05-30</td>
+                                        <td><span class="badge bg-warning text-dark">Terlambat</span></td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
-                        
-                        <!-- Pagination -->
-                        <nav aria-label="Page navigation" class="mt-3">
-                            <ul class="pagination justify-content-center" id="pagination">
-                                <!-- Pagination akan diisi oleh JavaScript -->
-                            </ul>
-                        </nav>
                     </div>
                 </div>
             </div>
@@ -509,91 +544,172 @@
                         <input type="date" class="form-control" id="modalTanggalKembali" required>
                         <div class="invalid-feedback">Harap pilih tanggal kembali</div>
                     </div>
-                    <div class="alert alert-info mt-3">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <span id="dendaInfo">Tidak ada denda</span>
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" id="btnProsesPengembalian" class="btn btn-primary">
-                        <i class="fas fa-check me-1"></i> Proses Pengembalian
-                    </button>
+                    <button type="button" id="btnProsesPengembalian" class="btn btn-primary">Proses Pengembalian</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Detail Buku -->
-    <div class="modal fade" id="detailBukuModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="detailJudulBuku">Judul Buku</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="ratio ratio-1x1 bg-light rounded mb-3">
-                                <div class="d-flex justify-content-center align-items-center h-100">
-                                    <i class="fas fa-book-open fa-4x text-muted"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <h6>Detail Buku</h6>
-                                <table class="table table-sm">
-                                    <tbody>
-                                        <tr>
-                                            <th width="30%">Pengarang</th>
-                                            <td id="detailPengarang">-</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Tahun Terbit</th>
-                                            <td id="detailTahunTerbit">-</td>
-                                        </tr>
-                                        <tr>
-                                            <th>ISBN</th>
-                                            <td id="detailIsbn">-</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Kategori</th>
-                                            <td id="detailKategori">-</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Status</th>
-                                            <td><span class="badge bg-success">Tersedia</span></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="mb-3">
-                                <h6>Deskripsi</h6>
-                                <p id="detailDeskripsi" class="text-muted">Tidak ada deskripsi tersedia</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                    <button type="button" class="btn btn-primary btn-pinjam-modal">
-                        <i class="fas fa-hand-holding me-1"></i> Pinjam Buku Ini
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Custom JavaScript -->
-    <script src="script.js"></script>
+    <script>
+        // Sembunyikan loading overlay setelah halaman selesai dimuat
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }, 1000);
+            
+            // Inisialisasi tooltip
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Tangani klik tombol pinjam
+            var pinjamButtons = document.querySelectorAll('.btn-pinjam');
+            pinjamButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    var judul = this.getAttribute('data-judul');
+                    var pengarang = this.getAttribute('data-pengarang');
+                    var tahun = this.getAttribute('data-tahun');
+                    var kategori = this.getAttribute('data-kategori');
+                    var isbn = this.getAttribute('data-isbn');
+                    
+                    document.getElementById('judulBuku').value = judul;
+                    document.getElementById('pengarang').value = pengarang;
+                    document.getElementById('tahunTerbit').value = tahun;
+                    document.getElementById('kategori').value = kategori;
+                    document.getElementById('isbn').value = isbn;
+                    
+                    // Scroll ke form peminjaman
+                    document.getElementById('formPeminjaman').scrollIntoView({ behavior: 'smooth' });
+                });
+            });
+            
+            // Tangani perubahan tanggal pinjam dan lama pinjam
+            document.getElementById('tanggalPinjam').addEventListener('change', hitungJatuhTempo);
+            document.getElementById('lamaPinjam').addEventListener('change', hitungJatuhTempo);
+            
+            function hitungJatuhTempo() {
+                var tanggalPinjam = document.getElementById('tanggalPinjam').value;
+                var lamaPinjam = document.getElementById('lamaPinjam').value;
+                
+                if (tanggalPinjam && lamaPinjam) {
+                    var date = new Date(tanggalPinjam);
+                    date.setDate(date.getDate() + (lamaPinjam * 7));
+                    
+                    var formattedDate = date.toISOString().split('T')[0];
+                    document.getElementById('jatuhTempo').value = formattedDate;
+                }
+            }
+            
+            // Validasi form
+            document.getElementById('formPeminjaman').addEventListener('submit', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                
+                if (this.checkValidity()) {
+                    // Tampilkan loading
+                    document.getElementById('loadingOverlay').style.display = 'flex';
+                    document.getElementById('loadingText').textContent = 'Menyimpan data peminjaman...';
+                    
+                    // Simulasikan proses penyimpanan
+                    setTimeout(function() {
+                        // Tampilkan alert sukses
+                        var alertHTML = `
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <strong>Berhasil!</strong> Peminjaman buku telah disimpan.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `;
+                        document.getElementById('alertContainer').innerHTML = alertHTML;
+                        
+                        // Sembunyikan loading
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        
+                        // Reset form
+                        document.getElementById('formPeminjaman').reset();
+                        document.getElementById('formPeminjaman').classList.remove('was-validated');
+                    }, 1500);
+                } else {
+                    this.classList.add('was-validated');
+                }
+            });
+            
+            // Tombol reset form
+            document.getElementById('btnReset').addEventListener('click', function() {
+                document.getElementById('formPeminjaman').reset();
+                document.getElementById('formPeminjaman').classList.remove('was-validated');
+            });
+            
+            // Tombol kembalikan buku
+            var kembalikanButtons = document.querySelectorAll('.btn-kembalikan');
+            kembalikanButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    var row = this.closest('tr');
+                    var cells = row.querySelectorAll('td');
+                    
+                    document.getElementById('modalJudulBuku').value = cells[1].textContent;
+                    document.getElementById('modalPengarang').value = cells[2].textContent;
+                    document.getElementById('modalNamaPeminjam').value = cells[3].textContent;
+                    document.getElementById('modalTanggalPinjam').value = cells[4].textContent;
+                    document.getElementById('modalJatuhTempo').value = cells[5].textContent;
+                    
+                    // Set tanggal kembali hari ini
+                    var today = new Date();
+                    var formattedDate = today.toISOString().substr(0, 10);
+                    document.getElementById('modalTanggalKembali').value = formattedDate;
+                    
+                    // Tampilkan modal
+                    var modal = new bootstrap.Modal(document.getElementById('pengembalianModal'));
+                    modal.show();
+                });
+            });
+            
+            // Proses pengembalian
+            document.getElementById('btnProsesPengembalian').addEventListener('click', function() {
+                var modalTanggalKembali = document.getElementById('modalTanggalKembali');
+                
+                if (!modalTanggalKembali.value) {
+                    modalTanggalKembali.classList.add('is-invalid');
+                    return;
+                }
+                
+                modalTanggalKembali.classList.remove('is-invalid');
+                
+                // Tampilkan loading
+                document.getElementById('loadingOverlay').style.display = 'flex';
+                document.getElementById('loadingText').textContent = 'Memproses pengembalian...';
+                
+                // Sembunyikan modal
+                var modal = bootstrap.Modal.getInstance(document.getElementById('pengembalianModal'));
+                modal.hide();
+                
+                // Simulasikan proses pengembalian
+                setTimeout(function() {
+                    // Tampilkan alert sukses
+                    var alertHTML = `
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Berhasil!</strong> Pengembalian buku telah diproses.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    document.getElementById('alertContainer').innerHTML = alertHTML;
+                    
+                    // Sembunyikan loading
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    
+                    // Refresh data pengembalian (dalam implementasi nyata, ini akan memuat ulang data dari server)
+                    location.reload();
+                }, 1500);
+            });
+        });
+    </script>
 </body>
 </html>
