@@ -245,26 +245,41 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ====================== BOOK FUNCTIONS ======================
-async function loadBuku() {
+async function loadBuku(page = 1, itemsPerPage = 50) {
     showLoading('Memuat data buku...');
     
     try {
-        const { data, error } = await supabase
+        const { data, error, count } = await supabase
             .from('buku')
-            .select('*')
-            .order('judul', { ascending: true });
+            .select('*', { count: 'exact' })
+            .order('judul', { ascending: true })
+            .range((page - 1) * itemsPerPage, page * itemsPerPage - 1);
 
         if (error) throw error;
 
         bukuList = data || [];
         updateTabelBuku();
+        return count; // Return total count for pagination controls
     } catch (error) {
         console.error("Error loading buku:", error);
         showAlert('error', 'Gagal memuat data buku: ' + error.message);
+        return 0;
     } finally {
         hideLoading();
     }
 }
+
+// Initial load
+loadBuku();
+
+// With pagination
+loadBuku(1, 50).then(totalCount => {
+    console.log(`Total books: ${totalCount}`);
+    // Update pagination UI
+});
+
+// Refresh every 5 minutes
+setInterval(loadBuku, 5 * 60 * 1000);
 
 function searchBukuSuggestions() {
     const searchTerm = document.getElementById('judulBuku').value.toLowerCase();
