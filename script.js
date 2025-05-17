@@ -3,6 +3,7 @@ import "firebase/compat/analytics";
 import "firebase/compat/firestore";
 import "firebase/compat/auth";
 
+// Konfigurasi Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyCCi8CdLNb1O6uEZBpVoeH_3mJhXElBGTU",
     authDomain: "meminjam-buku.firebaseapp.com",
@@ -13,7 +14,7 @@ const firebaseConfig = {
     measurementId: "G-KK3XQDMD9G"
 };
 
-// Initialize Firebase
+// Inisialisasi Firebase
 const app = firebase.initializeApp(firebaseConfig);
 const analytics = firebase.analytics();
 const db = firebase.firestore();
@@ -21,8 +22,8 @@ const auth = firebase.auth();
 
 // Fungsi untuk menampilkan alert
 function showAlert(type, message) {
-    const alertClass = type === 'error' ? 'danger' : 'success';
-    const icon = type === 'error' ? 'exclamation-circle' : 'check-circle';
+    const alertClass = type === 'error' ? 'danger' : type === 'info' ? 'info' : 'success';
+    const icon = type === 'error' ? 'exclamation-circle' : type === 'info' ? 'info-circle' : 'check-circle';
     
     const alertHTML = `
         <div class="alert alert-${alertClass} alert-dismissible fade show" role="alert">
@@ -34,7 +35,6 @@ function showAlert(type, message) {
     
     document.getElementById('alertContainer').innerHTML = alertHTML;
     
-    // Sembunyikan alert setelah 5 detik
     setTimeout(() => {
         const alerts = document.querySelectorAll('.alert');
         alerts.forEach(alert => {
@@ -46,6 +46,9 @@ function showAlert(type, message) {
 // Fungsi untuk memuat data peminjaman aktif
 async function loadActiveLoans() {
     try {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        document.getElementById('loadingText').textContent = 'Memuat peminjaman aktif...';
+        
         const querySnapshot = await db.collection("peminjaman")
             .where("status", "==", "aktif")
             .get();
@@ -80,26 +83,28 @@ async function loadActiveLoans() {
     } catch (error) {
         console.error("Error loading active loans: ", error);
         showAlert('error', 'Gagal memuat data peminjaman aktif');
+    } finally {
+        document.getElementById('loadingOverlay').style.display = 'none';
     }
 }
 
-// Fungsi untuk memuat riwayat peminjaman
+// Fungsi untuk memuat riwayat peminjaman dengan fallback jika index tidak ada
 async function loadLoanHistory() {
     try {
-        // Show loading state
         document.getElementById('loadingOverlay').style.display = 'flex';
-        document.getElementById('loadingText').textContent = 'Memuat riwayat...';
+        document.getElementById('loadingText').textContent = 'Memuat riwayat peminjaman...';
         
-        // Try the composite query first
         let querySnapshot;
+        
         try {
+            // Coba query dengan index pertama
             querySnapshot = await db.collection("peminjaman")
                 .where("status", "in", ["dikembalikan", "terlambat"])
                 .orderBy("tanggalPinjam", "desc")
                 .get();
         } catch (error) {
             if (error.code === 'failed-precondition') {
-                // Fallback to separate queries if index doesn't exist
+                // Fallback ke query terpisah jika index tidak ada
                 const [returned, late] = await Promise.all([
                     db.collection("peminjaman")
                         .where("status", "==", "dikembalikan")
@@ -110,16 +115,25 @@ async function loadLoanHistory() {
                         .orderBy("tanggalPinjam", "desc")
                         .get()
                 ]);
-                querySnapshot = {
-                    docs: [...returned.docs, ...late.docs].sort((a, b) => 
-                        new Date(b.data().tanggalPinjam) - new Date(a.data().tanggalPinjam)
-                    )
-                };
+                
+                // Gabungkan dan urutkan hasil
+                const allDocs = [...returned.docs, ...late.docs];
+                allDocs.sort((a, b) => {
+                    return new Date(b.data().tanggalPinjam) - new Date(a.data().tanggalPinjam);
+                });
+                
+                querySnapshot = { docs: allDocs };
+                
+                // Beri tahu pengguna untuk membuat index
+                const indexUrl = error.message.match(/https:\/\/[^ ]+/)?.[0];
+                if (indexUrl) {
+                    showAlert('info', `Untuk performa lebih baik, <a href="${indexUrl}" target="_blank">buat index Firestore</a>`);
+                }
             } else {
                 throw error;
             }
         }
-
+            
         const riwayatBody = document.getElementById('riwayatBody');
         riwayatBody.innerHTML = '';
         
@@ -143,18 +157,9 @@ async function loadLoanHistory() {
             `;
             riwayatBody.innerHTML += row;
         });
-
     } catch (error) {
-        console.error("Error loading loan history:", error);
+        console.error("Error loading loan history: ", error);
         showAlert('error', 'Gagal memuat riwayat peminjaman');
-        
-        // Provide link to create index if that's the error
-        if (error.code === 'failed-precondition') {
-            const indexUrl = error.message.match(/https:\/\/[^ ]+/)?.[0];
-            if (indexUrl) {
-                showAlert('info', `Query memerlukan index. <a href="${indexUrl}" target="_blank">Buat index di sini</a>`);
-            }
-        }
     } finally {
         document.getElementById('loadingOverlay').style.display = 'none';
     }
@@ -163,6 +168,9 @@ async function loadLoanHistory() {
 // Fungsi untuk menampilkan modal pengembalian
 async function showReturnModal(docId) {
     try {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        document.getElementById('loadingText').textContent = 'Menyiapkan pengembalian...';
+        
         const doc = await db.collection("peminjaman").doc(docId).get();
         
         if (doc.exists) {
@@ -191,6 +199,8 @@ async function showReturnModal(docId) {
     } catch (error) {
         console.error("Error getting document:", error);
         showAlert('error', 'Gagal memuat data peminjaman');
+    } finally {
+        document.getElementById('loadingOverlay').style.display = 'none';
     }
 }
 
@@ -205,6 +215,37 @@ function hitungJatuhTempo() {
         
         const formattedDate = date.toISOString().split('T')[0];
         document.getElementById('jatuhTempo').value = formattedDate;
+    }
+}
+
+// Fungsi untuk menginisialisasi aplikasi
+async function initializeApp() {
+    try {
+        // Inisialisasi tab Bootstrap dengan cara yang benar
+        const tabEls = document.querySelectorAll('[data-bs-toggle="tab"]');
+        tabEls.forEach(tabEl => {
+            tabEl.addEventListener('click', function(e) {
+                e.preventDefault();
+                const tab = new bootstrap.Tab(this);
+                tab.show();
+            });
+        });
+
+        // Inisialisasi event listeners lainnya
+        initializeEventListeners();
+        
+        // Muat data awal
+        await Promise.all([loadActiveLoans(), loadLoanHistory()]);
+        
+        // Log event analytics
+        analytics.logEvent('page_view');
+        
+    } catch (error) {
+        console.error("Error initializing app: ", error);
+        showAlert('error', 'Gagal memuat aplikasi');
+    } finally {
+        // Sembunyikan loading overlay setelah inisialisasi selesai
+        document.getElementById('loadingOverlay').style.display = 'none';
     }
 }
 
@@ -356,8 +397,7 @@ function initializeEventListeners() {
             showAlert('success', 'Pengembalian buku berhasil diproses');
             
             // Perbarui daftar
-            await loadActiveLoans();
-            await loadLoanHistory();
+            await Promise.all([loadActiveLoans(), loadLoanHistory()]);
             
             // Log event analytics
             analytics.logEvent('return_success', {
@@ -447,36 +487,9 @@ function initializeEventListeners() {
         
         rows.forEach(row => {
             const text = row.textContent.toLowerCase();
-            if (text.includes(keyword)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
+            row.style.display = text.includes(keyword) ? '' : 'none';
         });
     });
-}
-
-// Fungsi untuk inisialisasi aplikasi
-async function initializeApp() {
-    try {
-        // Sembunyikan loading overlay setelah inisialisasi selesai
-        setTimeout(() => {
-            document.getElementById('loadingOverlay').style.display = 'none';
-        }, 1000);
-        
-        // Inisialisasi event listeners
-        initializeEventListeners();
-        
-        // Muat data awal
-        await loadActiveLoans();
-        await loadLoanHistory();
-        
-        // Log event analytics
-        analytics.logEvent('page_view');
-    } catch (error) {
-        console.error("Error initializing app: ", error);
-        showAlert('error', 'Gagal memuat aplikasi');
-    }
 }
 
 // Jalankan inisialisasi ketika DOM siap
